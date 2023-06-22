@@ -1,0 +1,5 @@
+pyTelegramBotAPI == 4.12.0
+pydub == 0.25.1
+openai
+openpyxl
+prettytable
