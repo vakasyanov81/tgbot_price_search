@@ -1,1 +1,0 @@
-	sudo docker run --env TG_TOKEN=5968027174:AAFl0EPdQEL8MzTVcvcie5QwhdqrlqZTNag --env OPEN_AI_TOKEN=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 -d -p 3000:3000 --name tgbot --rm tg-bot
