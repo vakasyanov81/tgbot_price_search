@@ -8,4 +8,5 @@ class Config(NamedTuple):
     MODEL_VOICE_TRANSLIT = "whisper-1"
     CHAT_GPT_MODEL = "gpt-3.5-turbo"
     ALLOW_USER_LIST = os.getenv('ALLOW_USER_LIST')
+    UPLOAD_DIR = 'upload'
 
