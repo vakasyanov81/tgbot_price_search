@@ -48,9 +48,9 @@ class PriceList:
 
         for i in range(1, sheet.max_row + 1):
             title = sheet[i][2].value.lower()
-            price = sheet[i][4].value  # цена продажи
-            price_purchase = sheet[i][3].value  # цена закупочная
-            rest = sheet[i][7].value
+            price = sheet[i][6].value  # цена продажи
+            price_purchase = sheet[i][5].value  # цена закупочная
+            rest = sheet[i][9].value
             if title not in self.price_list:
                 self.price_list[title] = []
             self.price_list[title].append(PriceInfo(price, price_purchase, rest, i))
