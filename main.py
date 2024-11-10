@@ -5,6 +5,6 @@ command = CommandStateStore()
 
 
 # Запускаем бота
-bot.polling()
+bot.infinity_polling(timeout=10, long_polling_timeout=5)
 # price_list.load_price('price.xlsx')
 # print(price_list.search('all'))
