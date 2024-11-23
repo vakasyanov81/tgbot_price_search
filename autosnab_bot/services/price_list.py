@@ -1,19 +1,30 @@
 import os
 from collections import OrderedDict
+from pathlib import Path
 from typing import NamedTuple, Type
 
 import prettytable as pt
-from openpyxl import load_workbook
+from python_calamine import CalamineWorkbook
+
+from autosnab_bot import config
 
 
 class PriceInfo(NamedTuple):
-    price: float
-    price_purchase: float
+    price: str
+    price_purchase: str
     rest: str
     row_id: int
 
 
 price_data = dict[str, list[PriceInfo]]
+
+
+class PriceSearchInterface:
+    def __init__(self, price_list: price_data):
+        self.price_list = price_list
+
+    def search(self, search_string: str, search_limit: int):
+        raise NotImplementedError
 
 
 class PriceListSimple:
@@ -28,6 +39,8 @@ class PriceListSimple:
 
 
 class PriceList:
+    _is_loaded = False
+
     def __init__(self, search_driver: Type["PriceSearchInterface"], file_name):
         self.price_list: price_data = OrderedDict()
         self.file_name = file_name
@@ -37,38 +50,36 @@ class PriceList:
         return self.search_driver(self.price_list).search(search_string, search_limit)
 
     def load_price(self):
-        _file = os.getcwd() + "/" + self.file_name
+        _file = str(config.UPLOAD_DIR) + os.sep + self.file_name
+        if not Path(_file).exists():
+            return False
 
-        try:
-            wb = load_workbook(filename=_file)
-        except FileNotFoundError:
-            return
+        wb = CalamineWorkbook.from_path(_file)
 
-        sheet = wb["price"]
+        data = wb.get_sheet_by_name("price").to_python()
 
-        for i in range(1, sheet.max_row + 1):
-            title = sheet[i][2].value.lower()
-            price = sheet[i][6].value  # цена продажи
-            price_purchase = sheet[i][5].value  # цена закупочная
-            rest = sheet[i][9].value
+        for i, data_ in enumerate(data):
+            # skip header
+            if i == 0:
+                continue
+            title = str(data_[2]).lower()
+            price = str(data_[6])  # цена продажи
+            price_purchase = str(data_[5])  # цена закупочная
+            rest = str(data_[9])
             if title not in self.price_list:
                 self.price_list[title] = []
             self.price_list[title].append(PriceInfo(price, price_purchase, rest, i))
 
+        self._is_loaded = True
+
     def clear(self):
         self.price_list = OrderedDict()
 
-
-class PriceSearchInterface:
-    def __init__(self, price_list: price_data):
-        self.price_list = price_list
-
-    def search(self, search_string: str, search_limit: int):
-        raise NotImplementedError
+    def price_is_loaded(self):
+        return self._is_loaded
 
 
 class PriceListSearch(PriceSearchInterface):
-
     def search(self, search_string: str, search_limit=10):
         """Поиск по названию позиции в прайсе"""
         result = self.strict_search(
@@ -137,21 +148,13 @@ def get_instance_price_list(
         "PriceListSimple": PriceListSimple,
     }
     search_driver_instance = {"PriceListSearch": PriceListSearch}
-    return price_driver_instances.get(price_driver)(
-        search_driver_instance.get(search_driver), *args
-    )
+
+    instance = price_driver_instances[price_driver]
+
+    return instance(search_driver_instance.get(search_driver), *args)
 
 
-if __name__ == "__main__":
-
-    def search(title, search_string):
-        data = {title: PriceInfo(10, 10, "1", 1)}
-        _price_list = get_instance_price_list(
-            "PriceListSimple", "PriceListSearch", data
-        )
-        return _price_list.search("185 65 r15")
-
-    assert {} == search("185/60r15 bfgoodrich g-force winter 2 88t", "185 65 r15")
-    assert "185/65r15 bfgoodrich g-force winter 2 88t" in search(
-        "185/65r15 bfgoodrich g-force winter 2 88t", "185 65 r15"
-    )
+price_list_instance = get_instance_price_list(
+    "PriceList", "PriceListSearch", "price.xlsx"
+)
+price_list_instance.load_price()
