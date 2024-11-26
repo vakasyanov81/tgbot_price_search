@@ -3,7 +3,6 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import NamedTuple, Type
 
-import prettytable as pt
 from python_calamine import CalamineWorkbook
 
 from autosnab_bot import config
@@ -46,7 +45,7 @@ class PriceList:
         self.file_name = file_name
         self.search_driver = search_driver
 
-    def search(self, search_string: str, search_limit=10):
+    def search(self, search_string: str, search_limit=50):
         return self.search_driver(self.price_list).search(search_string, search_limit)
 
     def load_price(self):
@@ -80,14 +79,14 @@ class PriceList:
 
 
 class PriceListSearch(PriceSearchInterface):
-    def search(self, search_string: str, search_limit=10):
+    def search(self, search_string: str, search_limit=50):
         """Поиск по названию позиции в прайсе"""
         result = self.strict_search(
             search_string, search_limit
         ) or self.no_accurate_search(search_string, search_limit)
         return result
 
-    def strict_search(self, search_string: str, search_limit=10):
+    def strict_search(self, search_string: str, search_limit=50):
         """Строгий поиск по точному вхождению"""
         result = dict()
         search_string = search_string.lower()
@@ -101,7 +100,7 @@ class PriceListSearch(PriceSearchInterface):
                 break
         return result
 
-    def no_accurate_search(self, search_string: str, search_limit=10):
+    def no_accurate_search(self, search_string: str, search_limit=50):
         """Не строгий поиск"""
         result = dict()
         search_string = search_string.lower()
@@ -124,20 +123,24 @@ class PriceListSearch(PriceSearchInterface):
         return result
 
 
-def prepare_search_result(result):
-    # print(result)
-    table = pt.PrettyTable(["название", "цена", "остаток"])
-    table.align["название"] = "l"
-    table.align["цена"] = "r"
-    table.align["остаток"] = "r"
-    for title, prices in result.items():
-        table.add_row(
-            (title, f"{prices[0].price_purchase}/{prices[0].price}", prices[0].rest)
+def prepare_search_result(source):
+    # добавить сортировку по цене, сначала дешевые.
+    row = 1
+    result = ""
+    for title, prices in source.items():
+        result = (
+            result
+            + f"{row}. {title} - {try_to_int(prices[0].price)}Руб. {try_to_int(prices[0].rest)} шт. \n"
         )
-    # response_txt = ''  # find_nomenclature(message.text)
-    response_txt = f"```{table}```"
-    # print(f"response: {response_txt}")
-    return response_txt
+        row += 1
+    return result
+
+
+def try_to_int(val: str) -> str:
+    try:
+        return str(int(float(val)))
+    except ValueError:
+        return val
 
 
 def get_instance_price_list(

@@ -12,7 +12,6 @@ python = "^3.11"
 python-telegram-bot = "==20.0"
 python-dotenv = "==0.21.1"
 python-calamine = "==0.3.1"
-prettytable = "==3.11.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "==0.0.240"
