@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.response import send_response
 from autosnab_bot.services.file_upload import upload_file
-from autosnab_bot.services.price_list import price_list_instance
+from autosnab_bot.services.price_search_cache import reload_price
 from autosnab_bot.services.validate_user import validate_user
 
 
@@ -20,7 +20,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     _file = await context.bot.get_file(update.message.document)
     await upload_file(_file, "price.xlsx")
-    price_list_instance.load_price()
+    reload_price()
 
     await send_response(
         update,

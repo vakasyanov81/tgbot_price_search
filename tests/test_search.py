@@ -1,9 +1,24 @@
-from autosnab_bot.services.price_list import PriceInfo, get_instance_price_list
+from autosnab_bot.services.price_list import PriceInfo, price_data
+from autosnab_bot.services.price_search import PriceListSearch
+
+
+class PriceListSimpleDataLoader:
+    def __init__(self, items):
+        self.price_list: price_data = items
+
+    def get_price_list(self) -> price_data:
+        return self.price_list
+
+    def load_price(self):
+        pass
+
+
+def get_instance(data) -> PriceListSearch:
+    return PriceListSearch(PriceListSimpleDataLoader(data))
 
 
 def search(title, search_string):
-    data = {title: PriceInfo("10", "10", "1", 1)}
-    _price_list = get_instance_price_list("PriceListSimple", "PriceListSearch", data)
+    _price_list = get_instance({title: PriceInfo("10", "10", "1", 1)})
     return _price_list.search(search_string)
 
 
