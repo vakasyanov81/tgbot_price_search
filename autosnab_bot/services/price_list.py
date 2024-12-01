@@ -1,7 +1,7 @@
 import os
 from collections import OrderedDict
 from pathlib import Path
-from typing import NamedTuple, Type
+from typing import NamedTuple
 
 from python_calamine import CalamineWorkbook
 
@@ -18,37 +18,16 @@ class PriceInfo(NamedTuple):
 price_data = dict[str, list[PriceInfo]]
 
 
-class PriceSearchInterface:
-    def __init__(self, price_list: price_data):
-        self.price_list = price_list
-
-    def search(self, search_string: str, search_limit: int):
-        raise NotImplementedError
-
-
-class PriceListSimple:
-    def __init__(
-        self, search_driver: Type["PriceSearchInterface"], price_list: price_data
-    ):
-        self.search_driver = search_driver
-        self.price_list = price_list
-
-    def search(self, search_string: str, search_limit=10):
-        return self.search_driver(self.price_list).search(search_string, search_limit)
-
-
-class PriceList:
-    _is_loaded = False
-
-    def __init__(self, search_driver: Type["PriceSearchInterface"], file_name):
+class PriceListDataLoader:
+    def __init__(self, file_name):
         self.price_list: price_data = OrderedDict()
         self.file_name = file_name
-        self.search_driver = search_driver
-
-    def search(self, search_string: str, search_limit=50):
-        return self.search_driver(self.price_list).search(search_string, search_limit)
 
     def load_price(self):
+        title_index = 2
+        price_selling_index = 6
+        price_purchase_index = 5
+        rest_count_index = 9
         _file = str(config.UPLOAD_DIR) + os.sep + self.file_name
         if not Path(_file).exists():
             return False
@@ -61,103 +40,14 @@ class PriceList:
             # skip header
             if i == 0:
                 continue
-            title = str(data_[2]).lower()
-            price = str(data_[6])  # цена продажи
-            price_purchase = str(data_[5])  # цена закупочная
-            rest = str(data_[9])
+            title = str(data_[title_index]).lower()
+            price = str(data_[price_selling_index])
+            price_purchase = str(data_[price_purchase_index])
+            rest = str(data_[rest_count_index])
+
             if title not in self.price_list:
                 self.price_list[title] = []
             self.price_list[title].append(PriceInfo(price, price_purchase, rest, i))
 
-        self._is_loaded = True
-
-    def clear(self):
-        self.price_list = OrderedDict()
-
-    def price_is_loaded(self):
-        return self._is_loaded
-
-
-class PriceListSearch(PriceSearchInterface):
-    def search(self, search_string: str, search_limit=50):
-        """Поиск по названию позиции в прайсе"""
-        result = self.strict_search(
-            search_string, search_limit
-        ) or self.no_accurate_search(search_string, search_limit)
-        return result
-
-    def strict_search(self, search_string: str, search_limit=50):
-        """Строгий поиск по точному вхождению"""
-        result = dict()
-        search_string = search_string.lower()
-        search_count = 0
-
-        for title, prices in self.price_list.items():
-            if search_string in title:
-                result[title] = prices
-                search_count += 1
-            if search_count >= search_limit:
-                break
-        return result
-
-    def no_accurate_search(self, search_string: str, search_limit=50):
-        """Не строгий поиск"""
-        result = dict()
-        search_string = search_string.lower()
-        search_count = 0
-        search_chunks = [s.strip() for s in search_string.split() if len(s.strip())]
-        search_chunks_len = len(search_chunks)
-        if search_chunks_len == 1:
-            return result
-
-        for title, prices in self.price_list.items():
-            searched_chunk_count = 0
-            for search_chunk in search_chunks:
-                if search_chunk in title:
-                    searched_chunk_count += 1
-            if searched_chunk_count == search_chunks_len:
-                result[title] = prices
-                search_count += 1
-            if search_count >= search_limit:
-                break
-        return result
-
-
-def prepare_search_result(source):
-    # добавить сортировку по цене, сначала дешевые.
-    row = 1
-    result = ""
-    for title, prices in source.items():
-        result = (
-            result
-            + f"{row}. {title} - {try_to_int(prices[0].price)}Руб. {try_to_int(prices[0].rest)} шт. \n"
-        )
-        row += 1
-    return result
-
-
-def try_to_int(val: str) -> str:
-    try:
-        return str(int(float(val)))
-    except ValueError:
-        return val
-
-
-def get_instance_price_list(
-    price_driver: str, search_driver: str = "PriceListSearch", *args
-):
-    price_driver_instances = {
-        "PriceList": PriceList,
-        "PriceListSimple": PriceListSimple,
-    }
-    search_driver_instance = {"PriceListSearch": PriceListSearch}
-
-    instance = price_driver_instances[price_driver]
-
-    return instance(search_driver_instance.get(search_driver), *args)
-
-
-price_list_instance = get_instance_price_list(
-    "PriceList", "PriceListSearch", "price.xlsx"
-)
-price_list_instance.load_price()
+    def get_price_list(self) -> price_data:
+        return self.price_list
