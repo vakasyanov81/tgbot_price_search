@@ -8,3 +8,5 @@ db.sqlite3
 .DS_Store
 .env
 .ruff_cache
+.env*
+upload/
