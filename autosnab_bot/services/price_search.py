@@ -5,9 +5,7 @@ class PriceListSearch:
 
     def search(self, search_string: str, search_limit=50):
         """Поиск по названию позиции в прайсе"""
-        result = self.strict_search(
-            search_string, search_limit
-        ) or self.no_accurate_search(search_string, search_limit)
+        result = self.strict_search(search_string, search_limit) or self.no_accurate_search(search_string, search_limit)
         return result
 
     def strict_search(self, search_string: str, search_limit=50):
@@ -52,10 +50,7 @@ def prepare_search_result(source):
     row = 1
     result = ""
     for title, prices in source.items():
-        result = (
-            result
-            + f"{row}. {title} - {try_to_int(prices[0].price)}Руб. {try_to_int(prices[0].rest)} шт. \n"
-        )
+        result = result + f"{row}. {title} - {try_to_int(prices[0].price)}Руб. {try_to_int(prices[0].rest)} шт. \n"
         row += 1
     return result
 
