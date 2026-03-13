@@ -13,31 +13,21 @@ jobs:
       with:
         python-version: "3.13"
 
-    - name: Install poetry
-      run: |
-        pip install pipx
-        pipx install poetry
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
 
-    - name: Validate the structure of the pyproject.toml
+    - name: Install project dependency
       run: |
-        poetry check
-
-    - name: Verify that poetry.lock is consistent with pyproject.toml
-      run: |
-        poetry check --lock
-
-    - name: Install dependencies
-      run: |
-        poetry install
+          uv sync --locked --all-extras --dev
 
     - name: Check code formatting by black
       run: |
-        poetry run black . --check
+        uv run black ${GITHUB_WORKSPACE} --check --line-length 120 --skip-string-normalization --target-version py311
 
     - name: Lint code by ruff
       run: |
-        poetry run ruff .
+        uv run ruff check
 
     - name: Check types by pyright
       run: |
-        poetry run pyright
+        uv run pyright

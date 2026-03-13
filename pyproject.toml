@@ -1,27 +1,40 @@
-[tool.poetry]
+[project]
 name = "autosnab-bot"
 version = "0.1.0"
 description = ""
-authors = ["Kasyanov Vladimir <podriv-ustoev@yandex.ru>"]
+authors = [{ name = "Kasyanov Vladimir", email = "podriv-ustoev@yandex.ru" }]
+requires-python = ">=3.13,<4"
 readme = "README.md"
-packages = [{include = "autosnab_bot"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "python-telegram-bot==20.0",
+    "python-dotenv==1.2.2",
+    "python-calamine==0.6.2",
+]
 
-[tool.poetry.dependencies]
-python = "^3.13"
+[dependency-groups]
+dev = [
+    "ruff==0.15.5",
+    "pyright==1.1.408",
+    "black==26.3.1",
+    "pytest==9.0.2",
+]
 
-python-telegram-bot = "==20.0"
-python-dotenv = "==1.2.2"
-python-calamine = "==0.6.2"
+[tool.uv]
+default-groups = "all"
 
-[tool.poetry.group.dev.dependencies]
-ruff = "==0.15.5"
-pyright = "==1.1.408"
-black = "==26.3.1"
-pytest = "==9.0.2"
+[tool.uv.build-backend]
+module-name = ["autosnab_bot"]
+module-root = ""
+namespace = true
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.10,<0.10.0"]
+build-backend = "uv_build"
 
 [tool.ruff]
 select = ["F", "E", "W", "C90",
