@@ -11,9 +11,7 @@ async def check_rights(user_id):
     if not config.ALLOW_USER_LIST:
         return True
 
-    allow_users: list[int] = [
-        int(id_) for id_ in str(config.ALLOW_USER_LIST).split(",")
-    ]
+    allow_users: list[int] = [int(id_) for id_ in str(config.ALLOW_USER_LIST).split(",")]
     if int(user_id) not in allow_users:
         return False
     return True

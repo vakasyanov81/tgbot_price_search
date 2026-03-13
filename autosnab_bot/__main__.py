@@ -9,9 +9,7 @@ COMMAND_HANDLERS = {
     "help": handlers.help,
 }
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -25,9 +23,7 @@ def main():
     for command_name, command_handler in COMMAND_HANDLERS.items():
         application.add_handler(CommandHandler(command_name, command_handler))
 
-    application.add_handler(
-        MessageHandler(filters.TEXT & (~filters.COMMAND), handlers.search)
-    )
+    application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handlers.search))
 
     application.add_handler(MessageHandler(filters.Document.ALL, handlers.download))
 
