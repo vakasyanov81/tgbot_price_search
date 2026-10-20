@@ -45,6 +45,7 @@ class FakeBuilder:
 def test_main_registers_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(config, 'TELEGRAM_BOT_TOKEN', 'token')
     monkeypatch.setattr(bot_main, 'ApplicationBuilder', FakeBuilder)
+    monkeypatch.setattr(bot_main, 'ALLOWED_USER_IDS', ALL_USERS)
     bot_main.main()
     application = FakeBuilder.application
     assert application.polling
