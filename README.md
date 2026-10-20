@@ -94,9 +94,18 @@ uv run python -m autosnab_bot
 
 ## Тесты и проверки
 
+Набор проверок тот же, что в priceformation; настройки — в `pyproject.toml` и `setup.cfg`. Все команды запускаются через `uv run` по всему репозиторию (сабмодуль `priceformation` исключён).
+
 ```bash
-uv run pytest          # тесты
-uv run ruff check      # линтер
-uv run black --check . # проверка форматирования
-uv run pyright         # проверка типов
+uv run pytest                                  # тесты, покрытие не ниже 95%
+uv run black --check --diff .                  # форматирование
+uv run ruff check .                            # линтер
+uv run flake8 .                                # wemake-python-styleguide
+uv run mypy .                                  # типы (strict)
+uv run lint-imports                            # слои: handlers -> services -> config
+uv run vulture                                 # мёртвый код
+uv run bandit -r autosnab_bot -c pyproject.toml # безопасность
+uv run pip-audit                               # уязвимости зависимостей
 ```
+
+То же короче через [just](https://github.com/casey/just): `just ci` — все проверки и тесты, `just check` — проверки без тестов, `just format` — автоформат. Перед коммитом проверки запускает pre-commit (`.pre-commit-config.yaml`), в GitHub — workflow `.github/workflows/python-app.yml`.

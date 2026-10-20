@@ -1,12 +1,22 @@
-import html
+import functools
 import math
 from collections.abc import Callable
+from typing import Protocol
 
 from autosnab_bot.services.price_list import PriceInfo, price_data
 
+type Match = tuple[str, list[PriceInfo]]
+type TitleMatcher = Callable[[str], bool]
+
+
+class PriceLoader(Protocol):
+    def load_price(self) -> bool: ...
+
+    def get_price_list(self) -> price_data: ...
+
 
 class PriceListSearch:
-    def __init__(self, data_loader) -> None:
+    def __init__(self, data_loader: PriceLoader) -> None:
         self.is_loaded = bool(data_loader.load_price())
         self.price_list: price_data = data_loader.get_price_list()
 
@@ -15,16 +25,15 @@ class PriceListSearch:
 
         search_limit — сколько самых дешёвых позиций вернуть (None — все найденные).
         """
-        return self.strict_search(search_string, search_limit, product_type) or self.no_accurate_search(
-            search_string, search_limit, product_type
-        )
+        strict = self.strict_search(search_string, search_limit, product_type)
+        return strict or self.no_accurate_search(search_string, search_limit, product_type)
 
     def strict_search(
         self, search_string: str, search_limit: int | None = 50, product_type: str | None = None
     ) -> price_data:
         """Строгий поиск по точному вхождению"""
-        search_string = search_string.lower()
-        return self._collect(lambda title: search_string in title, search_limit, product_type)
+        matches = functools.partial(_has_chunk, search_string.lower())
+        return self._collect(matches, search_limit, product_type)
 
     def no_accurate_search(
         self, search_string: str, search_limit: int | None = 50, product_type: str | None = None
@@ -33,51 +42,41 @@ class PriceListSearch:
         search_chunks = search_string.lower().split()
         if len(search_chunks) <= 1:
             return {}
-        return self._collect(lambda title: all(chunk in title for chunk in search_chunks), search_limit, product_type)
+        matches = functools.partial(_has_all_chunks, search_chunks)
+        return self._collect(matches, search_limit, product_type)
 
-    def _collect(
-        self, matches: Callable[[str], bool], search_limit: int | None, product_type: str | None
-    ) -> price_data:
+    def _collect(self, matches: TitleMatcher, search_limit: int | None, product_type: str | None) -> price_data:
         """Все совпадения, по возрастанию цены; у названия с несколькими строками первой идёт самая дешёвая."""
-        found: list[tuple[str, list[PriceInfo]]] = []
+        found: list[Match] = []
         for title, prices in self.price_list.items():
-            if not matches(title):
-                continue
-            if product_type:
-                prices = [info for info in prices if info.product_type == product_type]
-                if not prices:
-                    continue
-            found.append((title, sorted(prices, key=price_value)))
-        found.sort(key=lambda item: price_value(item[1][0]))
+            of_type = _of_type(prices, product_type) if matches(title) else []
+            if of_type:
+                found.append((title, sorted(of_type, key=price_value)))
+        found.sort(key=_cheapest_price)
         return dict(found[:search_limit])
 
 
-def price_value(info: PriceInfo) -> float:
+def price_value(price_info: PriceInfo) -> float:
     """Цена для сортировки; позиции без цены или с нечисловой ценой — в конец."""
     try:
-        return float(info.price)
+        return float(price_info.price)
     except ValueError:
         return math.inf
 
 
-def prepare_search_result(source: price_data) -> str:
-    return "\n".join(search_result_lines(source))
+def _has_chunk(chunk: str, title: str) -> bool:
+    return chunk in title
 
 
-def search_result_lines(source: price_data) -> list[str]:
-    lines = []
-    for row, (title, prices) in enumerate(source.items(), start=1):
-        price = html.escape(try_to_int(prices[0].price))
-        rest = html.escape(try_to_int(prices[0].rest))
-        line = f"{row}. {html.escape(prices[0].title or title)} - {price}Руб. {rest} шт."
-        if prices[0].supplier:
-            line += f" ({html.escape(prices[0].supplier)})"
-        lines.append(line)
-    return lines
+def _has_all_chunks(chunks: list[str], title: str) -> bool:
+    return all(chunk in title for chunk in chunks)
 
 
-def try_to_int(val: str) -> str:
-    try:
-        return str(int(float(val)))
-    except ValueError, OverflowError:
-        return val
+def _of_type(prices: list[PriceInfo], product_type: str | None) -> list[PriceInfo]:
+    if not product_type:
+        return prices
+    return [price_info for price_info in prices if price_info.product_type == product_type]
+
+
+def _cheapest_price(match: Match) -> float:
+    return price_value(match[1][0])

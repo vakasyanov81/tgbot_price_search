@@ -19,9 +19,9 @@ async def handle_type_chip(update: Update, context: ContextTypes.DEFAULT_TYPE, t
         else:
             context.user_data[USER_TYPE_FILTER] = label
     if label == ALL_TYPES:
-        message = "Фильтр снят: поиск по всем типам товара"
+        message = 'Фильтр снят: поиск по всем типам товара'
     else:
-        message = f"Фильтр: <b>{html.escape(label)}</b>. Поиск идёт только по этому типу товара"
+        message = f'Фильтр: <b>{html.escape(label)}</b>. Поиск идёт только по этому типу товара'
     # Ответ несёт меню с новой отметкой активного чипса (см. send_response).
     await send_response(update, context, response=message)
     return True

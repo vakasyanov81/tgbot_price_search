@@ -10,3 +10,8 @@ db.sqlite3
 .ruff_cache
 .env*
 bot_state.pickle
+.coverage
+htmlcov/
+coverage.xml
+.mypy_cache/
+.pytest_cache/

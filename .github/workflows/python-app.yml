@@ -1,0 +1,43 @@
+# Те же проверки, что `just ci` и .pre-commit-config.yaml (как в priceformation).
+# Настройки инструментов — в pyproject.toml / setup.cfg, флаги здесь не переопределяются.
+
+name: Lint and check types and tests
+
+'on': [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install project dependency
+        run: uv sync --locked --all-extras --dev
+      - name: Test coverage
+        run: uv run pytest
+      - name: Check code by black
+        run: uv run black --check --diff .
+      - name: Lint with ruff
+        run: uv run ruff check .
+      - name: Lint with flake8
+        run: uv run flake8 .
+      - name: Check types with mypy
+        run: uv run mypy .
+      - name: Check import layers with import-linter
+        run: uv run lint-imports
+      - name: Find unused code with vulture
+        run: uv run vulture
+      - name: Check security with bandit
+        run: uv run bandit -r autosnab_bot -c pyproject.toml
+      - name: Audit dependencies
+        run: uv run pip-audit

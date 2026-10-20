@@ -4,27 +4,22 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.search import USER_SOURCE, user_source
-from autosnab_bot.services.price_sources import SOURCES, SOURCES_BY_KEY
+from autosnab_bot.services.price_sources import SOURCES, SOURCES_BY_KEY, PriceSource
 from autosnab_bot.services.response import send_response
 from autosnab_bot.services.validate_user import validate_user
 
-CALLBACK_PREFIX = "src:"
+CALLBACK_PREFIX = 'src:'
 
 
 @validate_user
 async def choose_source(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     current = user_source(context)
-    buttons = []
-    for source in SOURCES:
-        path = source.latest_file()
-        mark = "✅ " if source == current else ""
-        label = f"{mark}{source.title}: {path.name}" if path else f"{mark}{source.title} (не сформирован)"
-        buttons.append([InlineKeyboardButton(label, callback_data=CALLBACK_PREFIX + source.key)])
+    keyboard = InlineKeyboardMarkup([[_source_button(source, current)] for source in SOURCES])
     await send_response(
         update,
         context,
-        response=f"Сейчас поиск идёт по: <b>{html.escape(current.title)}</b>\nВыберите прайс для поиска:",
-        keyboard=InlineKeyboardMarkup(buttons),
+        response=f'Сейчас поиск идёт по: <b>{html.escape(current.title)}</b>\nВыберите прайс для поиска:',
+        keyboard=keyboard,
     )
 
 
@@ -38,5 +33,14 @@ async def set_source(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if source is None or context.user_data is None:
         return
     context.user_data[USER_SOURCE] = source.key
-    note = "" if source.latest_file() else f"\nЭтот прайс ещё не сформирован. {source.how_to_make}."
-    await send_response(update, context, response=f"Поиск будет идти по: <b>{html.escape(source.title)}</b>{note}")
+    note = '' if source.latest_file() else f'\nЭтот прайс ещё не сформирован. {source.how_to_make}.'
+    chosen = f'Поиск будет идти по: <b>{html.escape(source.title)}</b>'
+    await send_response(update, context, response=f'{chosen}{note}')
+
+
+def _source_button(source: PriceSource, current: PriceSource) -> InlineKeyboardButton:
+    """Кнопка прайса: текущий отмечен, рядом — файл, по которому идёт поиск."""
+    path = source.latest_file()
+    mark = '✅ ' if source == current else ''
+    state = f': {path.name}' if path else ' (не сформирован)'
+    return InlineKeyboardButton(f'{mark}{source.title}{state}', callback_data=f'{CALLBACK_PREFIX}{source.key}')

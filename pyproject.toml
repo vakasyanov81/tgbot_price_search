@@ -18,10 +18,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff==0.17.1",
-    "pyright==1.1.414",
     "black==26.10.1",
     "pytest==9.1.1",
     "openpyxl==3.1.5",
+    "pytest-cov==7.1.0",
+    "wemake-python-styleguide==1.8.1",
+    "mypy==2.4.0",
+    "vulture==2.16",
+    "bandit==1.9.4",
+    "pip-audit==2.10.1",
+    "import-linter>=2.15",
 ]
 
 [tool.uv]
@@ -38,7 +44,8 @@ build-backend = "uv_build"
 
 [tool.black]
 line-length = 120
-skip-string-normalization = true
+preview = true
+skip-string-normalization = true # кавычки — одинарные, следит ruff (flake8-quotes)
 extend-exclude = "^/priceformation/"
 
 [tool.ruff]
@@ -46,18 +53,78 @@ line-length = 120
 extend-exclude = ["priceformation"]
 
 [tool.ruff.lint]
+# Набор правил как в priceformation.
 select = ["F", "E", "W", "C90",
           "I", "N", "S", "B", "A",
-          "ISC", "T20", "Q", "PTH"]
-ignore = ["A003"]
+          "ISC", "T20", "Q", "PTH", "UP",
+          "SIM", "RET", "PIE", "RUF",
+          "PERF", "PL", "ERA"]
+# RUF001–003: кириллица в строках/комментариях похожа на латиницу — ложные срабатывания.
+# WPS*: коды flake8-wemake в `# noqa` (иначе RUF102).
+ignore = ["RUF001", "RUF002", "RUF003"]
+external = ["WPS"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 6
+
+[tool.ruff.lint.pylint]
+# Как max-arguments в setup.cfg (WPS).
+max-args = 6
+max-positional-args = 6
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["S101"]
+"tests/**/*.py" = ["S101", "PLR2004", "PLC0415"]
 
-[tool.pyright]
-exclude = ["priceformation", "**/__pycache__", "**/.*"]
-reportUnnecessaryTypeIgnoreComment="warning"
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.format]
+quote-style = "single"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["priceformation"]
+norecursedirs = [".git", "priceformation"]
+addopts = [
+    "--strict-config",
+    # pytest-cov: тестовый код не измеряется (.coveragerc)
+    "--cov=autosnab_bot",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-fail-under=95",
+]
+
+[tool.mypy]
+explicit_package_bases = true
+strict = true
+ignore_missing_imports = true
+local_partial_types = true
+warn_unreachable = true
+exclude = ["priceformation/", "\\.venv/"]
+
+[tool.vulture]
+# Код и тесты вместе: использование только в тестах — не «мёртвый» код.
+paths = ["autosnab_bot", "tests"]
+exclude = [".venv/", "priceformation/", ".mypy_cache/", ".ruff_cache/", ".pytest_cache/", "htmlcov/"]
+min_confidence = 100
+ignore_decorators = ["@pytest.fixture"]
+
+[tool.bandit]
+targets = ["autosnab_bot"]
+exclude_dirs = ["tests", "priceformation", ".venv", ".mypy_cache", ".ruff_cache", "htmlcov"]
+
+[tool.pip-audit]
+# Проверяется текущее окружение (все зависимости, включая dev).
+
+[tool.importlinter]
+root_packages = ["autosnab_bot"]
+
+# Слои сверху вниз: обработчики Telegram → сервисы → настройки. Импорты — только вниз.
+[[tool.importlinter.contracts]]
+name = "Слои: handlers -> services -> config"
+type = "layers"
+layers = [
+    "autosnab_bot.handlers",
+    "autosnab_bot.services",
+    "autosnab_bot.config",
+]
+broken_contract_guidance = "Импорт из слоя выше запрещён: сервисы не знают про обработчики Telegram, настройки — ни про что."

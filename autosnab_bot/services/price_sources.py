@@ -4,7 +4,7 @@ import dataclasses
 import re
 from pathlib import Path
 
-from autosnab_bot.services.priceformation import RESULT_DIR
+from autosnab_bot.services.priceformation_cli import RESULT_DIR
 
 
 @dataclasses.dataclass(frozen=True)
@@ -21,26 +21,29 @@ class PriceSource:
         folder = folder or RESULT_DIR
         if not folder.is_dir():
             return None
-        files = [path for path in folder.iterdir() if path.is_file() and self.file_pattern.fullmatch(path.name)]
+        files = [path for path in folder.iterdir() if self._matches(path)]
         return max(files, key=lambda path: path.name, default=None)
 
+    def _matches(self, path: Path) -> bool:
+        return path.is_file() and self.file_pattern.fullmatch(path.name) is not None
 
-_DATE = r"\d{4}-\d{2}-\d{2}"
-_VIA_PF = "Сформируйте его через /pf → «Сформировать общий прайс»"
+
+_DATE = r'\d{4}-\d{2}-\d{2}'
+_VIA_PF = 'Сформируйте его через /pf → «Сформировать общий прайс»'
 
 SOURCES = (
-    PriceSource("drom", "Прайс для Дрома", re.compile(rf"price_drom_{_DATE}\.xlsx"), _VIA_PF),
-    PriceSource("inner", "Общий прайс", re.compile(rf"price_{_DATE}\.xlsx"), _VIA_PF),
+    PriceSource('drom', 'Прайс для Дрома', re.compile(rf'price_drom_{_DATE}\.xlsx'), _VIA_PF),
+    PriceSource('inner', 'Общий прайс', re.compile(rf'price_{_DATE}\.xlsx'), _VIA_PF),
     PriceSource(
-        "full",
-        "Полный прайс",
-        re.compile(rf"price_full_{_DATE}\.xlsx"),
-        "Бот его не формирует: запустите в priceformation <code>uv run pf parse --result-template for_full</code>",
+        'full',
+        'Полный прайс',
+        re.compile(rf'price_full_{_DATE}\.xlsx'),
+        'Бот его не формирует: запустите в priceformation <code>uv run pf parse --result-template for_full</code>',
     ),
 )
 SOURCES_BY_KEY = {source.key: source for source in SOURCES}
-DEFAULT_SOURCE = SOURCES_BY_KEY["drom"]
+DEFAULT_SOURCE = SOURCES_BY_KEY['drom']
 
 
 def get_source(key: str | None) -> PriceSource:
-    return SOURCES_BY_KEY.get(key or "", DEFAULT_SOURCE)
+    return SOURCES_BY_KEY.get(key or '', DEFAULT_SOURCE)

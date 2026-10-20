@@ -6,9 +6,9 @@ from telegram.ext import ContextTypes
 from autosnab_bot.services.product_types import get_product_types
 
 # Выбранный тип товара в user_data; нет ключа — поиск по всем типам.
-USER_TYPE_FILTER = "type_filter"
-ALL_TYPES = "Все"
-ACTIVE_MARK = "✅ "
+USER_TYPE_FILTER = 'type_filter'
+ALL_TYPES = 'Все'
+ACTIVE_MARK = '✅ '
 CHIPS_PER_ROW = 2
 
 
@@ -20,6 +20,11 @@ async def type_keyboard(context: ContextTypes.DEFAULT_TYPE) -> ReplyKeyboardMark
     """«Все» и типы товара из priceformation, активный отмечен."""
     active = user_type_filter(context) or ALL_TYPES
     labels = [ALL_TYPES, *await get_product_types()]
-    chips = [KeyboardButton(ACTIVE_MARK + label if label == active else label) for label in labels]
-    rows = [chips[i : i + CHIPS_PER_ROW] for i in range(0, len(chips), CHIPS_PER_ROW)]
+    chips = [KeyboardButton(_chip_label(label, active)) for label in labels]
+    starts = range(0, len(chips), CHIPS_PER_ROW)
+    rows = [chips[start : start + CHIPS_PER_ROW] for start in starts]
     return ReplyKeyboardMarkup(rows, resize_keyboard=True, is_persistent=True)
+
+
+def _chip_label(label: str, active: str) -> str:
+    return f'{ACTIVE_MARK}{label}' if label == active else label

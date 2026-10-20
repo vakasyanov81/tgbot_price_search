@@ -30,8 +30,9 @@ async def send_response(
 
 
 async def send_document(update: Update, context: ContextTypes.DEFAULT_TYPE, path: Path) -> None:
-    with path.open("rb") as document:
-        await context.bot.send_document(chat_id=_get_chat_id(update), document=document, filename=path.name)
+    chat_id = _get_chat_id(update)
+    with path.open('rb') as document:
+        await context.bot.send_document(chat_id=chat_id, document=document, filename=path.name)
 
 
 def _get_chat_id(update: Update) -> int:
