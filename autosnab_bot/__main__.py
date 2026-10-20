@@ -3,21 +3,24 @@ import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 from autosnab_bot import config, handlers
+from autosnab_bot.services.validate_user import ALLOWED_USER_IDS
 
 COMMAND_HANDLERS = {
     "start": handlers.start,
-    "help": handlers.help,
+    "help": handlers.help_,
 }
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 if not config.TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN variable wasn't implemented in .env.")
 
+if not ALLOWED_USER_IDS:
+    raise ValueError("ALLOW_USER_LIST variable must contain at least one user ID in .env.")
 
-def main():
+
+def main() -> None:
     application = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
 
     for command_name, command_handler in COMMAND_HANDLERS.items():
@@ -31,11 +34,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        # price_list.load_price('price.xlsx')
-        # print(price_list.search('all'))
-        main()
-    except Exception:
-        import traceback
-
-        logger.warning(traceback.format_exc())
+    main()

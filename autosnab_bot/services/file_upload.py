@@ -1,8 +1,10 @@
-import os
+from telegram import File
 
-from autosnab_bot.config import UPLOAD_DIR
+from autosnab_bot import config
 
 
-async def upload_file(_file, file_name):
-    await _file.download_to_drive(str(UPLOAD_DIR) + os.sep + file_name)
-    return _file
+async def upload_file(_file: File, file_name: str) -> None:
+    target = config.UPLOAD_DIR / file_name
+    partial = target.with_name(target.name + ".part")
+    await _file.download_to_drive(partial)
+    partial.replace(target)
