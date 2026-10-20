@@ -10,5 +10,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_response(
         update,
         context,
-        response="Салам, пополам! Это бот для поиска позиций по прайс листу!",
+        response='Салам, пополам! Это бот для поиска позиций по прайс листу!\n'
+        'Внизу — типы товара: нажмите на тип, чтобы искать только по нему.',
     )

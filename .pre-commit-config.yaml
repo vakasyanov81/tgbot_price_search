@@ -1,11 +1,55 @@
+# Те же инструменты, что в CI (как в priceformation).
+# Запуск через `uv run`, чтобы версии совпадали с pyproject.toml / uv.lock.
+# Настройки — в pyproject.toml и setup.cfg, флаги инструментов здесь не переопределяются.
+exclude: ^(priceformation/|\.venv/)
+
 repos:
-  - repo: https://github.com/psf/black
-    rev: 26.10.1
+  - repo: local
     hooks:
       - id: black
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.1
-    hooks:
+        name: black
+        entry: uv run black
+        language: system
+        types_or: [python, pyi]
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: flake8
+        name: flake8
+        entry: uv run flake8 .
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: mypy
+        name: mypy
+        entry: uv run mypy .
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: lint-imports
+        name: import-linter
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        types: [python]
+        always_run: true
+      - id: vulture
+        name: vulture
+        entry: uv run vulture
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: bandit
+        name: bandit
+        entry: uv run bandit -r autosnab_bot -c pyproject.toml
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: pip-audit
+        name: pip-audit
+        entry: uv run pip-audit
+        language: system
+        pass_filenames: false
+        always_run: true

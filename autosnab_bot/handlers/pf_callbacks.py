@@ -1,0 +1,10 @@
+"""Данные кнопок меню /pf (callback_data)."""
+
+CALLBACK_PREFIX = 'pf:'
+MAKE_PRICE = f'{CALLBACK_PREFIX}make_price'
+UPDATE_ALL = f'{CALLBACK_PREFIX}update_all'
+SHOW_HELP = f'{CALLBACK_PREFIX}help'
+CHOOSE_SUPPLIER = f'{CALLBACK_PREFIX}suppliers'
+SUPPLIER_PREFIX = f'{CALLBACK_PREFIX}supplier:'
+CANCEL_UPLOAD = f'{CALLBACK_PREFIX}cancel'
+CONFIRM_UPLOAD = f'{CALLBACK_PREFIX}upload'
