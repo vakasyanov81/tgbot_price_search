@@ -22,6 +22,8 @@ class PriceInfo(NamedTuple):
     row_id: int
     supplier: str = ""
     product_type: str = ""
+    # Название как в прайсе; ключ словаря — оно же в нижнем регистре, для поиска без учёта регистра.
+    title: str = ""
 
 
 price_data = dict[str, list[PriceInfo]]
@@ -51,7 +53,7 @@ class PriceListDataLoader:
             return str(row[index]) if index is not None and index < len(row) else ""
 
         for i, row in enumerate(data[1:], start=1):
-            title = cell(row, TITLE_HEADER).lower()
+            title = cell(row, TITLE_HEADER).strip()
             if not title:
                 continue
             info = PriceInfo(
@@ -61,8 +63,9 @@ class PriceListDataLoader:
                 row_id=i,
                 supplier=cell(row, SUPPLIER_HEADER),
                 product_type=cell(row, PRODUCT_TYPE_HEADER).strip().removesuffix(CORRECTED_TYPE_MARK),
+                title=title,
             )
-            self.price_list.setdefault(title, []).append(info)
+            self.price_list.setdefault(title.lower(), []).append(info)
         return True
 
     def get_price_list(self) -> price_data:

@@ -5,7 +5,7 @@ from openpyxl import Workbook
 
 from autosnab_bot.services import price_search_cache
 from autosnab_bot.services.price_list import PriceInfo, PriceListDataLoader
-from autosnab_bot.services.price_search import prepare_search_result
+from autosnab_bot.services.price_search import PriceListSearch, prepare_search_result
 from autosnab_bot.services.price_sources import DEFAULT_SOURCE, SOURCES_BY_KEY, get_source
 
 DROM_HEADER = ["Тип товара", "Бренд", "Номенклатура", "Сезон", "Шип", "Цена", "Остаток", "Наличие"]
@@ -63,7 +63,9 @@ def test_loader_reads_columns_by_header_drom(tmp_path):
     )
     loader = PriceListDataLoader(path)
     assert loader.load_price() is True
-    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "", "4.0", 1, "", "Шина")]}
+    assert loader.get_price_list() == {
+        "kama 185/65r15": [PriceInfo("5000.0", "", "4.0", 1, "", "Шина", "Kama 185/65R15")]
+    }
 
 
 def test_loader_reads_supplier_and_purchase_inner(tmp_path):
@@ -73,7 +75,9 @@ def test_loader_reads_supplier_and_purchase_inner(tmp_path):
     )
     loader = PriceListDataLoader(path)
     assert loader.load_price() is True
-    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "4000.0", "4.0", 1, "Пошк", "Шина")]}
+    assert loader.get_price_list() == {
+        "kama 185/65r15": [PriceInfo("5000.0", "4000.0", "4.0", 1, "Пошк", "Шина", "Kama 185/65R15")]
+    }
 
 
 def test_loader_rejects_file_without_title_column(tmp_path):
@@ -106,3 +110,14 @@ def test_loader_strips_corrected_type_mark(tmp_path):
     loader = PriceListDataLoader(path)
     loader.load_price()
     assert loader.get_price_list()["kama 185r14c"][0].product_type == "Легкогрузовая шина"
+
+
+def test_result_keeps_original_case_and_search_ignores_case(tmp_path):
+    path = write_price(
+        tmp_path / "drom.xlsx",
+        [DROM_HEADER, ["Шина", "Kama", "Kama 185/65R15 Breeze 88T", "Лето", "", 5000, 4, "В наличии"]],
+    )
+    search = PriceListSearch(PriceListDataLoader(path))
+    result = search.search("KAMA 185/65r15")
+    assert list(result) == ["kama 185/65r15 breeze 88t"]
+    assert prepare_search_result(result) == "1. Kama 185/65R15 Breeze 88T - 5000Руб. 4 шт."
