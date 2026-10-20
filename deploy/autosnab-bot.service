@@ -1,0 +1,17 @@
+# Шаблон пользовательского systemd-сервиса; @WORKDIR@ и @UV@ подставляет `just service-install`.
+[Unit]
+Description=autosnab Telegram bot
+After=network-online.target
+Wants=network-online.target
+# Не ограничивать число перезапусков за интервал: бот должен подниматься всегда.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=@WORKDIR@
+ExecStart=@UV@ run --locked python -m autosnab_bot
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

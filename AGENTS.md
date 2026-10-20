@@ -49,6 +49,7 @@ Telegram-бот (`autosnab_bot`). Python `>=3.14,<3.15`, пакетный мен
 - `just format` — автоформат (`black`, `ruff check --fix`).
 - `just run` — бот в текущем терминале (`uv run python -m autosnab_bot`).
 - `just start` / `stop` / `restart` / `status` / `logs` — бот в фоне: PID в `bot.pid`, лог в `bot.log` (оба в `.gitignore`).
+- `just service-install` — systemd-сервис пользователя (шаблон `deploy/autosnab-bot.service`): `Restart=always`, автозапуск при старте системы (нужен `sudo loginctl enable-linger $USER`); `service-status` / `service-restart` / `service-logs` / `service-uninstall`. Одновременно запускать только один экземпляр бота (`start` и сервис не совмещать).
 
 ## Коммиты
 Не коммитить автоматически: `git commit` и `git push` — только после явного подтверждения пользователя. Закончив правку и проверки, показать итог и спросить, коммитить ли; разрешение на один коммит не распространяется на следующие.

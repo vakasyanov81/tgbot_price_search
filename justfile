@@ -48,6 +48,36 @@ status:
 logs:
     tail -f bot.log
 
+# Установить и запустить systemd-сервис (автоперезапуск при падении, автозапуск при старте системы)
+service-install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    unit="$HOME/.config/systemd/user/autosnab-bot.service"
+    mkdir -p "$(dirname "$unit")"
+    sed -e "s|@WORKDIR@|$PWD|" -e "s|@UV@|$(command -v uv)|" deploy/autosnab-bot.service > "$unit"
+    systemctl --user daemon-reload
+    systemctl --user enable --now autosnab-bot.service
+    echo "Сервис установлен. Чтобы он работал без входа в систему и стартовал при загрузке: sudo loginctl enable-linger $USER"
+
+# Удалить systemd-сервис
+service-uninstall:
+    #!/usr/bin/env bash
+    systemctl --user disable --now autosnab-bot.service || true
+    rm -f "$HOME/.config/systemd/user/autosnab-bot.service"
+    systemctl --user daemon-reload
+
+# Состояние systemd-сервиса
+service-status:
+    systemctl --user status autosnab-bot.service --no-pager
+
+# Перезапустить systemd-сервис (после обновления кода)
+service-restart:
+    systemctl --user restart autosnab-bot.service
+
+# Лог systemd-сервиса (journalctl -f)
+service-logs:
+    journalctl --user -u autosnab-bot.service -f
+
 # Тесты с покрытием (порог 95%) — как в CI
 test *ARGS:
     uv run pytest {{ARGS}}
