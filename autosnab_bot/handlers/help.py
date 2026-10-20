@@ -1,12 +1,12 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from autosnab_bot.handlers.response import send_response
+from autosnab_bot.services.response import send_response
 from autosnab_bot.services.validate_user import validate_user
 
 
 @validate_user
-async def help_(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help_(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_response(
         update,
         context,

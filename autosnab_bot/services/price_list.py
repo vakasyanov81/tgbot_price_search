@@ -1,11 +1,14 @@
-import os
-from collections import OrderedDict
-from pathlib import Path
 from typing import NamedTuple
 
 from python_calamine import CalamineWorkbook
 
 from autosnab_bot import config
+
+SHEET_NAME = "price"
+TITLE_COLUMN = 2
+PRICE_PURCHASE_COLUMN = 5
+PRICE_SELLING_COLUMN = 6
+REST_COLUMN = 9
 
 
 class PriceInfo(NamedTuple):
@@ -19,35 +22,29 @@ price_data = dict[str, list[PriceInfo]]
 
 
 class PriceListDataLoader:
-    def __init__(self, file_name):
-        self.price_list: price_data = OrderedDict()
+    def __init__(self, file_name: str) -> None:
+        self.price_list: price_data = {}
         self.file_name = file_name
 
-    def load_price(self):
-        title_index = 2
-        price_selling_index = 6
-        price_purchase_index = 5
-        rest_count_index = 9
-        _file = str(config.UPLOAD_DIR) + os.sep + self.file_name
-        if not Path(_file).exists():
+    def load_price(self) -> bool:
+        path = config.UPLOAD_DIR / self.file_name
+        if not path.exists():
             return False
 
-        wb = CalamineWorkbook.from_path(_file)
+        wb = CalamineWorkbook.from_path(str(path))
+        data = wb.get_sheet_by_name(SHEET_NAME).to_python()
 
-        data = wb.get_sheet_by_name("price").to_python()
-
-        for i, data_ in enumerate(data):
+        for i, row in enumerate(data):
             # skip header
             if i == 0:
                 continue
-            title = str(data_[title_index]).lower()
-            price = str(data_[price_selling_index])
-            price_purchase = str(data_[price_purchase_index])
-            rest = str(data_[rest_count_index])
+            title = str(row[TITLE_COLUMN]).lower()
+            price = str(row[PRICE_SELLING_COLUMN])
+            price_purchase = str(row[PRICE_PURCHASE_COLUMN])
+            rest = str(row[REST_COLUMN])
 
-            if title not in self.price_list:
-                self.price_list[title] = []
-            self.price_list[title].append(PriceInfo(price, price_purchase, rest, i))
+            self.price_list.setdefault(title, []).append(PriceInfo(price, price_purchase, rest, i))
+        return True
 
     def get_price_list(self) -> price_data:
         return self.price_list

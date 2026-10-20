@@ -1,26 +1,32 @@
-from typing import cast
+import functools
+from collections.abc import Callable, Coroutine
+from typing import Any, cast
 
 from telegram import Update, User
 from telegram.ext import ContextTypes
 
 from autosnab_bot import config
-from autosnab_bot.handlers.response import send_response
+from autosnab_bot.services.response import send_response
+
+Handler = Callable[[Update, ContextTypes.DEFAULT_TYPE], Coroutine[Any, Any, None]]
 
 
-async def check_rights(user_id):
-    if not config.ALLOW_USER_LIST:
-        return True
-
-    allow_users: list[int] = [int(id_) for id_ in str(config.ALLOW_USER_LIST).split(",")]
-    if int(user_id) not in allow_users:
-        return False
-    return True
+def _parse_allow_list(raw: str) -> frozenset[int]:
+    return frozenset(int(item) for item in raw.split(",") if item.strip())
 
 
-def validate_user(handler):
-    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ALLOWED_USER_IDS = _parse_allow_list(config.ALLOW_USER_LIST)
+
+
+def check_rights(user_id: int) -> bool:
+    return user_id in ALLOWED_USER_IDS
+
+
+def validate_user(handler: Handler) -> Handler:
+    @functools.wraps(handler)
+    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = cast(User, update.effective_user).id
-        if not await check_rights(user_id):
+        if not check_rights(user_id):
             await send_response(
                 update,
                 context,

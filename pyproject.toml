@@ -3,25 +3,24 @@ name = "autosnab-bot"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Kasyanov Vladimir", email = "podriv-ustoev@yandex.ru" }]
-requires-python = ">=3.13,<4"
+requires-python = ">=3.14,<3.15"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "python-telegram-bot==20.0",
-    "python-dotenv==1.2.2",
-    "python-calamine==0.6.2",
+    "python-telegram-bot==22.8",
+    "python-dotenv==1.2.4",
+    "python-calamine==0.9.0",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff==0.15.5",
-    "pyright==1.1.408",
-    "black==26.3.1",
-    "pytest==9.0.2",
+    "ruff==0.17.1",
+    "pyright==1.1.414",
+    "black==26.10.1",
+    "pytest==9.1.1",
 ]
 
 [tool.uv]
@@ -36,16 +35,21 @@ namespace = true
 requires = ["uv_build>=0.9.10,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
 [tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
 select = ["F", "E", "W", "C90",
           "I", "N", "S", "B", "A",
           "ISC", "T20", "Q", "PTH"]
-line-length = 120
-
-[tool.ruff.per-file-ignores]
-"tests/*.py" = ["S101"]
-
 ignore = ["A003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101"]
 
 [tool.pyright]
 reportUnnecessaryTypeIgnoreComment="warning"
