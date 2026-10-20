@@ -87,7 +87,7 @@ def test_document_without_pending_supplier_gets_hint(monkeypatch):
         effective_chat=SimpleNamespace(id=1),
         message=SimpleNamespace(document=SimpleNamespace(file_name="price.xlsx")),
     )
-    context = SimpleNamespace(user_data={}, bot=SimpleNamespace(send_message=send_message))
+    context = SimpleNamespace(user_data={}, chat_data={}, bot=SimpleNamespace(send_message=send_message))
     asyncio.run(handler.supplier_price_upload(update, context))  # type: ignore[arg-type]
     assert len(sent) == 1
     assert "/pf" in sent[0]

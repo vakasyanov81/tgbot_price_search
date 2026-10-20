@@ -10,7 +10,7 @@ from autosnab_bot.services.price_search import search_result_lines
 from autosnab_bot.services.price_search_cache import get_search_instance
 from autosnab_bot.services.price_sources import PriceSource, get_source
 from autosnab_bot.services.response import edit_response, send_response
-from autosnab_bot.services.type_menu import user_type_filter
+from autosnab_bot.services.type_menu import menu_is_current, user_type_filter
 from autosnab_bot.services.validate_user import validate_user
 
 # Ключ выбранного прайса в user_data (см. /source).
@@ -56,7 +56,8 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 return
             # Иначе ответ удалён или его нельзя изменить: пришлём новый.
 
-    reply = await send_response(update, context, response=response)
+    # Меню внизу остаётся от прежних сообщений; ответ без него можно будет отредактировать.
+    reply = await send_response(update, context, response=response, with_menu=not await menu_is_current(context))
     replies[message.message_id] = reply.message_id
     while len(replies) > MAX_SEARCH_REPLIES:
         del replies[next(iter(replies))]

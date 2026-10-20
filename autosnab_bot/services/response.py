@@ -5,7 +5,7 @@ from telegram import Chat, InlineKeyboardMarkup, LinkPreviewOptions, Message, Re
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from autosnab_bot.services.type_menu import type_keyboard
+from autosnab_bot.services.type_menu import remember_menu, type_keyboard
 
 
 async def send_response(
@@ -16,9 +16,14 @@ async def send_response(
     with_menu: bool = True,
 ) -> Message:
     """Отправить сообщение. Без своей клавиатуры к нему прикрепляется меню типов товара внизу экрана:
-    так меню всегда на месте, даже если клиент Telegram его сбросил или пользователь не вызывал /start."""
+    так меню всегда на месте, даже если клиент Telegram его сбросил или пользователь не вызывал /start.
+
+    Сообщение с меню (ReplyKeyboard) Telegram редактировать не даёт: для ответов, которые потом
+    правятся (поиск), передавайте with_menu=False, когда меню в чате уже актуально (menu_is_current).
+    """
     if keyboard is None and with_menu:
         keyboard = await type_keyboard(context)
+        remember_menu(context, keyboard)
     return await context.bot.send_message(
         chat_id=_get_chat_id(update),
         link_preview_options=LinkPreviewOptions(is_disabled=True),

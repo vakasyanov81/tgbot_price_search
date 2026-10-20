@@ -224,3 +224,25 @@ def test_reply_shows_total_and_cheapest(monkeypatch):
     assert lines[1] == "Найдено 120 позиций, показаны 50 самых дешёвых — уточните запрос"
     assert lines[2].startswith("1. kama 0 - 1000Руб.")
     assert len(lines) == 2 + 50
+
+
+def test_search_reply_carries_menu_only_when_chat_lacks_it(monkeypatch):
+    async def fake_response(_context, text):
+        return f"результат: {text}"
+
+    monkeypatch.setattr(search_module, "search_response", fake_response)
+    context = make_context()
+
+    # Новый чат: меню ещё не показано — первый ответ несёт его.
+    asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
+    assert context.bot.sent[-1]["reply_markup"] is not None
+
+    # Меню уже на экране: ответ без клавиатуры, чтобы его можно было отредактировать.
+    asyncio.run(search_module.search(make_update("r16"), context))  # type: ignore[arg-type]
+    assert context.bot.sent[-1]["reply_markup"] is None
+
+    # Сменили фильтр: ответ на чипс несёт обновлённое меню, следующий поиск — снова без него.
+    asyncio.run(search_module.search(make_update("Диск"), context))  # type: ignore[arg-type]
+    assert "✅ Диск" in keyboard_labels(context.bot.sent[-1])
+    asyncio.run(search_module.search(make_update("r17"), context))  # type: ignore[arg-type]
+    assert context.bot.sent[-1]["reply_markup"] is None
