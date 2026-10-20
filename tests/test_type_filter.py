@@ -175,12 +175,52 @@ def test_long_result_fits_telegram_limit(monkeypatch):
     text = asyncio.run(search_module.search_response(context, "диск"))  # type: ignore[arg-type]
 
     assert len(text) <= search_module.MESSAGE_LIMIT
-    assert "Найдено 50 позиций (показаны первые " in text
-    shown = int(text.split("показаны первые ")[1].split(",")[0])
+    assert "Найдено 50 позиций, показаны " in text
+    shown = int(text.split("показаны ")[1].split(" ")[0])
     assert 0 < shown < 50
     assert text.count("\n") == 2 + shown  # источник, тип, найдено + строки
 
 
 def test_short_result_is_not_marked_truncated():
     lines = ["1. a", "2. b"]
-    assert search_module._lines_that_fit("header", lines) == 2
+    assert search_module._lines_that_fit("header", lines, note_needed=False) == 2
+
+
+def make_info(price, row_id=1, supplier=""):
+    return PriceInfo(price, "", "1", row_id, supplier=supplier)
+
+
+def test_search_sorts_by_price_across_all_matches():
+    items = {f"kama {i}": [make_info(str(1000 - i), i)] for i in range(100)}
+    items["kama no price"] = [make_info("")]
+    search = PriceListSearch(Loader(items))
+
+    result = search.search("kama", search_limit=3)
+    assert list(result) == ["kama 99", "kama 98", "kama 97"]
+
+    everything = search.search("kama", search_limit=None)
+    assert len(everything) == 101
+    assert list(everything)[-1] == "kama no price"
+
+
+def test_search_puts_cheapest_row_of_title_first():
+    search = PriceListSearch(
+        Loader({"kama": [make_info("5000", 1, "Пошк"), make_info("4500", 2, "Пионер")], "nokian": [make_info("4700")]})
+    )
+    result = search.search("a")
+    assert list(result) == ["kama", "nokian"]
+    assert result["kama"][0].supplier == "Пионер"
+
+
+def test_reply_shows_total_and_cheapest(monkeypatch):
+    items = {f"kama {i}": [make_info(str(1000 + i), i)] for i in range(120)}
+    search = PriceListSearch(Loader(items))
+    monkeypatch.setattr(search_module, "get_search_instance", lambda _key, _path: search)
+    monkeypatch.setattr(search_module.PriceSource, "latest_file", lambda _self: Path("price_drom_2026-10-20.xlsx"))
+
+    text = asyncio.run(search_module.search_response(make_context(), "kama"))  # type: ignore[arg-type]
+
+    lines = text.split("\n")
+    assert lines[1] == "Найдено 120 позиций, показаны 50 самых дешёвых — уточните запрос"
+    assert lines[2].startswith("1. kama 0 - 1000Руб.")
+    assert len(lines) == 2 + 50

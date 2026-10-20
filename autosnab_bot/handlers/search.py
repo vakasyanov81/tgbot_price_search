@@ -23,6 +23,9 @@ MAX_SEARCH_REPLIES = 200
 
 # Telegram не принимает сообщения длиннее 4096 символов; длинные названия (диски) в 50 строк туда не влезают.
 MESSAGE_LIMIT = 4096
+NOTE_RESERVE = 60
+# Сколько самых дешёвых позиций показывать.
+MAX_RESULTS = 50
 
 
 def user_source(context: ContextTypes.DEFAULT_TYPE) -> PriceSource:
@@ -72,24 +75,26 @@ async def search_response(context: ContextTypes.DEFAULT_TYPE, text: str) -> str:
         return f"Не удалось прочитать {html.escape(path.name)}: нет листа price или колонки «Номенклатура»"
 
     product_type = user_type_filter(context)
-    result = price_search.search(text, product_type=product_type)
+    # Все совпадения нужны для общего числа найденных; показываются самые дешёвые.
+    result = price_search.search(text, search_limit=None, product_type=product_type)
     header = [f"Источник: {html.escape(source.title)} ({html.escape(path.name)})"]
     if product_type:
         header.append(f"Тип товара: {html.escape(product_type)}")
-    lines = search_result_lines(result)
-    found = f"Найдено {len(result)} позиций "
-    shown = _lines_that_fit("\n".join([*header, found]), lines)
-    if shown < len(lines):
-        found += f"(показаны первые {shown}, уточните запрос)"
+    lines = search_result_lines(dict(list(result.items())[:MAX_RESULTS]))
+    found = f"Найдено {len(result)} позиций"
+    shown = _lines_that_fit("\n".join([*header, found]), lines, note_needed=len(result) > len(lines))
+    if shown < len(result):
+        found += f", показаны {shown} самых дешёвых — уточните запрос"
     return "\n".join([*header, found, *lines[:shown]])
 
 
-def _lines_that_fit(header: str, lines: list[str]) -> int:
+def _lines_that_fit(header: str, lines: list[str], note_needed: bool) -> int:
     """Сколько первых строк результата помещается в одно сообщение вместе с заголовком."""
-    if len("\n".join([header, *lines])) <= MESSAGE_LIMIT:
+    # Место под «, показаны NN самых дешёвых — уточните запрос», если она будет.
+    reserve = NOTE_RESERVE if note_needed else 0
+    if len(header) + reserve + sum(len(line) + 1 for line in lines) <= MESSAGE_LIMIT:
         return len(lines)
-    # Не влезает: оставляем место под «(показаны первые NN, уточните запрос)».
-    length = len(header) + 50
+    length = len(header) + NOTE_RESERVE
     for count, line in enumerate(lines):
         length += len(line) + 1
         if length > MESSAGE_LIMIT:
