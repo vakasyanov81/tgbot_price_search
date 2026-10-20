@@ -1,6 +1,8 @@
 import logging
+from typing import Any
 
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CallbackQueryHandler,
     CommandHandler,
@@ -18,6 +20,7 @@ COMMAND_HANDLERS = {
     'help': handlers.help_,
     'pf': handlers.priceformation_menu,
     'source': handlers.choose_source,
+    'script_manager': handlers.script_manager,
 }
 
 
@@ -39,14 +42,7 @@ def _setup_logging() -> None:
     logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
-def main() -> None:
-    _setup_logging()
-    check_config()
-    persistence = PicklePersistence(filepath=config.STATE_FILE)
-    application = (
-        ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).persistence(persistence).post_init(_warm_up).build()
-    )
-
+def _add_handlers(application: Application[Any, Any, Any, Any, Any, Any]) -> None:
     for command_name, command_handler in COMMAND_HANDLERS.items():
         application.add_handler(CommandHandler(command_name, command_handler))
 
@@ -65,8 +61,21 @@ def main() -> None:
         )
     )
 
+    application.add_handler(
+        CallbackQueryHandler(handlers.update_system, pattern=f'^{handlers.SCRIPT_UPDATE_CALLBACK}$', block=False)
+    )
+
     application.add_error_handler(handlers.on_error)
 
+
+def main() -> None:
+    _setup_logging()
+    check_config()
+    persistence = PicklePersistence(filepath=config.STATE_FILE)
+    application = (
+        ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).persistence(persistence).post_init(_warm_up).build()
+    )
+    _add_handlers(application)
     application.run_polling()
 
 

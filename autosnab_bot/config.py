@@ -11,3 +11,4 @@ BASE_DIR = Path(__file__).resolve().parent
 STATE_FILE = BASE_DIR / 'bot_state.pickle'
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 ALLOW_USER_LIST = os.getenv('ALLOW_USER_LIST', '')
+ADMIN_USER_LIST = os.getenv('ADMIN_USER_LIST', '')

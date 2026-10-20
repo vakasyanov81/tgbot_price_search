@@ -18,10 +18,15 @@ def _parse_allow_list(raw: str) -> frozenset[int]:
 
 
 ALLOWED_USER_IDS = _parse_allow_list(config.ALLOW_USER_LIST)
+ADMIN_USER_IDS = _parse_allow_list(config.ADMIN_USER_LIST)
 
 
 def check_rights(user_id: int) -> bool:
     return user_id in ALLOWED_USER_IDS
+
+
+def check_admin(user_id: int) -> bool:
+    return user_id in ADMIN_USER_IDS
 
 
 def validate_user(callback: BotCallback) -> BotCallback:
@@ -33,6 +38,23 @@ def validate_user(callback: BotCallback) -> BotCallback:
                 update,
                 context,
                 response=f'У вас нет доступа, обратитесь к системному администратору! Ваш ID - {user_id}',
+                with_menu=False,
+            )
+            return
+        await callback(update, context)
+
+    return wrapped
+
+
+def validate_admin(callback: BotCallback) -> BotCallback:
+    @functools.wraps(callback)
+    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user_id = cast(User, update.effective_user).id
+        if not check_admin(user_id):
+            await send_response(
+                update,
+                context,
+                response='Эта команда доступна только администраторам.',
                 with_menu=False,
             )
             return

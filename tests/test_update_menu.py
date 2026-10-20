@@ -1,0 +1,99 @@
+import asyncio
+
+import pytest
+
+from autosnab_bot.handlers import update_menu
+from autosnab_bot.services import validate_user
+from autosnab_bot.services.system_update import StepResult
+from tests.fakes import ALLOWED_USER, keyboard_labels, make_context, make_update
+
+ADMIN_COMMAND = '/script_manager'
+
+
+def _fake_steps(ok: bool) -> list[StepResult]:
+    return [StepResult('git pull --ff-only', ok, 'Already up to date.')]
+
+
+def test_script_manager_shows_update_button_to_admin() -> None:
+    context = make_context()
+    asyncio.run(update_menu.script_manager(make_update(ADMIN_COMMAND), context))
+
+    assert keyboard_labels(context.bot.sent[0]) == ['Обновить систему']
+
+
+def test_script_manager_denies_allowed_non_admin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(validate_user, 'ADMIN_USER_IDS', frozenset())
+    context = make_context()
+    asyncio.run(update_menu.script_manager(make_update(ADMIN_COMMAND), context))
+
+    assert 'только администраторам' in context.bot.texts[0]
+    assert context.bot.sent[0]['reply_markup'] is None
+
+
+def test_update_system_restarts_service_after_successful_pull(monkeypatch: pytest.MonkeyPatch) -> None:
+    restarts: list[int] = []
+
+    async def fake_update_code() -> list[StepResult]:
+        return _fake_steps(ok=True)
+
+    async def fake_restart() -> StepResult:
+        restarts.append(1)
+        return StepResult('systemctl --user restart autosnab-bot.service', ok=True, output='')
+
+    monkeypatch.setattr(update_menu, 'update_code', fake_update_code)
+    monkeypatch.setattr(update_menu, 'restart_service', fake_restart)
+    context = make_context()
+    asyncio.run(update_menu.update_system(make_update(callback_data=update_menu.UPDATE_CALLBACK), context))
+
+    assert restarts == [1]
+    assert any('git pull --ff-only' in text for text in context.bot.texts)
+
+
+def test_update_system_keeps_service_running_after_failed_pull(monkeypatch: pytest.MonkeyPatch) -> None:
+    restarts: list[int] = []
+
+    async def fake_update_code() -> list[StepResult]:
+        return _fake_steps(ok=False)
+
+    async def fake_restart() -> StepResult:
+        restarts.append(1)
+        return StepResult('systemctl', ok=True, output='')
+
+    monkeypatch.setattr(update_menu, 'update_code', fake_update_code)
+    monkeypatch.setattr(update_menu, 'restart_service', fake_restart)
+    context = make_context()
+    asyncio.run(update_menu.update_system(make_update(callback_data=update_menu.UPDATE_CALLBACK), context))
+
+    assert restarts == []
+    assert any('ОШИБКА' in text for text in context.bot.texts)
+
+
+def test_update_system_reports_restart_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_update_code() -> list[StepResult]:
+        return _fake_steps(ok=True)
+
+    async def fake_restart() -> StepResult:
+        return StepResult('systemctl --user restart autosnab-bot.service', ok=False, output='Unit not found.')
+
+    monkeypatch.setattr(update_menu, 'update_code', fake_update_code)
+    monkeypatch.setattr(update_menu, 'restart_service', fake_restart)
+    context = make_context()
+    asyncio.run(update_menu.update_system(make_update(callback_data=update_menu.UPDATE_CALLBACK), context))
+
+    assert 'Unit not found.' in context.bot.texts[-1]
+
+
+def test_update_system_ignores_non_admin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(validate_user, 'ADMIN_USER_IDS', frozenset())
+    calls: list[int] = []
+
+    async def fake_update_code() -> list[StepResult]:
+        calls.append(1)
+        return []
+
+    monkeypatch.setattr(update_menu, 'update_code', fake_update_code)
+    context = make_context()
+    update = make_update(callback_data=update_menu.UPDATE_CALLBACK, user_id=ALLOWED_USER)
+    asyncio.run(update_menu.update_system(update, context))
+
+    assert calls == []

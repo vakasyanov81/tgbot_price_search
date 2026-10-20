@@ -10,6 +10,7 @@ TEST_PRODUCT_TYPES = ('Легковая шина', 'Грузовая шина', 
 @pytest.fixture(autouse=True)
 def _allowed_user(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(validate_user, 'ALLOWED_USER_IDS', frozenset((ALLOWED_USER,)))
+    monkeypatch.setattr(validate_user, 'ADMIN_USER_IDS', frozenset((ALLOWED_USER,)))
 
 
 @pytest.fixture(autouse=True)

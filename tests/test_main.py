@@ -49,7 +49,7 @@ def test_main_registers_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
     bot_main.main()
     application = FakeBuilder.application
     assert application.polling
-    assert len(application.handlers) == len(bot_main.COMMAND_HANDLERS) + 4
+    assert len(application.handlers) == len(bot_main.COMMAND_HANDLERS) + 5
     assert application.error_handlers == [handlers.on_error]
 
 
