@@ -5,22 +5,26 @@ from telegram import Chat, InlineKeyboardMarkup, LinkPreviewOptions, Message, Re
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
+from autosnab_bot.services.type_menu import type_keyboard
+
 
 async def send_response(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     response: str,
     keyboard: InlineKeyboardMarkup | ReplyKeyboardMarkup | None = None,
+    with_menu: bool = True,
 ) -> Message:
-    args = {}
-    if keyboard:
-        args["reply_markup"] = keyboard
+    """Отправить сообщение. Без своей клавиатуры к нему прикрепляется меню типов товара внизу экрана:
+    так меню всегда на месте, даже если клиент Telegram его сбросил или пользователь не вызывал /start."""
+    if keyboard is None and with_menu:
+        keyboard = await type_keyboard(context)
     return await context.bot.send_message(
         chat_id=_get_chat_id(update),
         link_preview_options=LinkPreviewOptions(is_disabled=True),
         text=response,
         parse_mode=ParseMode.HTML,
-        **args,
+        reply_markup=keyboard,
     )
 
 

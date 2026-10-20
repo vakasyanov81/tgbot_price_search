@@ -5,11 +5,12 @@ from telegram import Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
-from autosnab_bot.handlers.type_filter import handle_type_chip, user_type_filter
+from autosnab_bot.handlers.type_filter import handle_type_chip
 from autosnab_bot.services.price_search import prepare_search_result
 from autosnab_bot.services.price_search_cache import get_search_instance
 from autosnab_bot.services.price_sources import PriceSource, get_source
 from autosnab_bot.services.response import edit_response, send_response
+from autosnab_bot.services.type_menu import user_type_filter
 from autosnab_bot.services.validate_user import validate_user
 
 # Ключ выбранного прайса в user_data (см. /source).

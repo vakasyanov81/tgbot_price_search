@@ -31,6 +31,7 @@ def validate_user(handler: Handler) -> Handler:
                 update,
                 context,
                 response=f"У вас нет доступа, обратитесь к системному администратору! Ваш ID - {user_id}",
+                with_menu=False,
             )
             return
         await handler(update, context)

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from autosnab_bot.handlers import type_filter
-from autosnab_bot.services import product_types, validate_user
+from autosnab_bot.services import product_types, type_menu, validate_user
 from autosnab_bot.services.price_list import PriceInfo
 from autosnab_bot.services.price_search import PriceListSearch
 
@@ -41,6 +41,7 @@ def _setup(monkeypatch):
         return TYPES
 
     monkeypatch.setattr(type_filter, "get_product_types", fake_types)
+    monkeypatch.setattr(type_menu, "get_product_types", fake_types)
 
 
 def make_context(user_data=None):
@@ -76,7 +77,7 @@ def test_search_filters_by_product_type():
 
 
 def test_keyboard_marks_active_type():
-    keyboard = asyncio.run(type_filter.type_keyboard(make_context({type_filter.USER_TYPE_FILTER: "Диск"})))
+    keyboard = asyncio.run(type_menu.type_keyboard(make_context({type_menu.USER_TYPE_FILTER: "Диск"})))
     assert [[button.text for button in row] for row in keyboard.keyboard] == [
         ["Все", "Легковая шина"],
         ["Грузовая шина", "✅ Диск"],
@@ -87,11 +88,11 @@ def test_keyboard_marks_active_type():
 def test_chip_sets_and_clears_filter():
     context = make_context()
     asyncio.run(search_module.search(make_update("Легковая шина"), context))  # type: ignore[arg-type]
-    assert context.user_data == {type_filter.USER_TYPE_FILTER: "Легковая шина"}
+    assert context.user_data == {type_menu.USER_TYPE_FILTER: "Легковая шина"}
     assert "✅ Легковая шина" in keyboard_labels(context.bot.sent[-1])
 
     asyncio.run(search_module.search(make_update("✅ Легковая шина"), context))  # type: ignore[arg-type]
-    assert context.user_data == {type_filter.USER_TYPE_FILTER: "Легковая шина"}
+    assert context.user_data == {type_menu.USER_TYPE_FILTER: "Легковая шина"}
 
     asyncio.run(search_module.search(make_update("Все"), context))  # type: ignore[arg-type]
     assert context.user_data == {}
@@ -102,11 +103,11 @@ def test_search_uses_type_filter(monkeypatch):
     seen = {}
 
     async def fake_response(context, text):
-        seen["type"] = type_filter.user_type_filter(context)
+        seen["type"] = type_menu.user_type_filter(context)
         return f"результат: {text}"
 
     monkeypatch.setattr(search_module, "search_response", fake_response)
-    context = make_context({type_filter.USER_TYPE_FILTER: "Диск"})
+    context = make_context({type_menu.USER_TYPE_FILTER: "Диск"})
     asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
     assert seen == {"type": "Диск"}
     assert context.bot.sent[-1]["text"] == "результат: r15"
@@ -142,3 +143,21 @@ def test_product_types_cache_keeps_last_list_on_error(monkeypatch):
     monkeypatch.setattr(product_types, "_loaded_at", 0.0)
     monkeypatch.setattr(product_types.priceformation, "get_product_types", fail)
     assert asyncio.run(product_types.get_product_types()) == ["Диск"]
+
+
+def test_every_plain_reply_carries_menu(monkeypatch):
+    async def fake_response(_context, text):
+        return f"результат: {text}"
+
+    monkeypatch.setattr(search_module, "search_response", fake_response)
+    context = make_context({type_menu.USER_TYPE_FILTER: "Диск"})
+    asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
+    assert "✅ Диск" in keyboard_labels(context.bot.sent[-1])
+
+
+def test_access_denied_has_no_menu(monkeypatch):
+    monkeypatch.setattr(validate_user, "ALLOWED_USER_IDS", frozenset({2}))
+    context = make_context()
+    asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
+    assert "нет доступа" in context.bot.sent[-1]["text"]
+    assert context.bot.sent[-1]["reply_markup"] is None
