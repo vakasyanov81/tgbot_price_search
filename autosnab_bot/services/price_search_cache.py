@@ -1,21 +1,22 @@
-from autosnab_bot import config
+import threading
+from pathlib import Path
+
 from autosnab_bot.services.price_list import PriceListDataLoader
 from autosnab_bot.services.price_search import PriceListSearch
 
-search_instance: PriceListSearch | None = None
+# Загруженный прайс каждого вида: ключ источника → (файл, mtime, поиск).
+# Новый файл (свежая дата) или перезаписанный старый читаются заново.
+_cache: dict[str, tuple[Path, float, PriceListSearch]] = {}
+_lock = threading.Lock()
 
 
-def _load_search() -> PriceListSearch:
-    return PriceListSearch(PriceListDataLoader(config.PRICE_FILE_NAME))
-
-
-def reload_price() -> None:
-    global search_instance
-    search_instance = _load_search()
-
-
-def get_search_instance() -> PriceListSearch:
-    global search_instance
-    if search_instance is None:
-        search_instance = _load_search()
-    return search_instance
+def get_search_instance(source_key: str, path: Path) -> PriceListSearch:
+    """Поиск по файлу прайса; файл читается при первом обращении или после его замены."""
+    mtime = path.stat().st_mtime
+    with _lock:
+        cached = _cache.get(source_key)
+        if cached is not None and cached[:2] == (path, mtime):
+            return cached[2]
+        search = PriceListSearch(PriceListDataLoader(path))
+        _cache[source_key] = (path, mtime, search)
+        return search

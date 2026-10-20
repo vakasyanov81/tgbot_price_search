@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from autosnab_bot.handlers import priceformation as handler
-from autosnab_bot.services import priceformation
+from autosnab_bot.services import priceformation, validate_user
 
 
 def test_strip_ansi():
@@ -75,9 +75,22 @@ def test_command_result_json_skips_uv_warnings():
     assert result.json() == {"1": {"sup_title": "Пошк"}}
 
 
-def test_supplier_upload_skipped_without_pending_supplier():
-    context = SimpleNamespace(user_data={})
-    assert asyncio.run(handler.supplier_price_upload(SimpleNamespace(), context)) is None  # type: ignore[arg-type]
+def test_document_without_pending_supplier_gets_hint(monkeypatch):
+    monkeypatch.setattr(validate_user, "ALLOWED_USER_IDS", frozenset({1}))
+    sent = []
+
+    async def send_message(**kwargs):
+        sent.append(kwargs["text"])
+
+    update = SimpleNamespace(
+        effective_user=SimpleNamespace(id=1),
+        effective_chat=SimpleNamespace(id=1),
+        message=SimpleNamespace(document=SimpleNamespace(file_name="price.xlsx")),
+    )
+    context = SimpleNamespace(user_data={}, bot=SimpleNamespace(send_message=send_message))
+    asyncio.run(handler.supplier_price_upload(update, context))  # type: ignore[arg-type]
+    assert len(sent) == 1
+    assert "/pf" in sent[0]
 
 
 def test_placed_names_from_cli_json():

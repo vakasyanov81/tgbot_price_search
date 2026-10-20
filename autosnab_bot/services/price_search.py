@@ -44,7 +44,10 @@ def prepare_search_result(source: price_data) -> str:
     for row, (title, prices) in enumerate(source.items(), start=1):
         price = html.escape(try_to_int(prices[0].price))
         rest = html.escape(try_to_int(prices[0].rest))
-        lines.append(f"{row}. {html.escape(title)} - {price}Руб. {rest} шт.")
+        line = f"{row}. {html.escape(title)} - {price}Руб. {rest} шт."
+        if prices[0].supplier:
+            line += f" ({html.escape(prices[0].supplier)})"
+        lines.append(line)
     return "\n".join(lines)
 
 

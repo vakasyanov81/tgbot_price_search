@@ -7,7 +7,7 @@ from pathlib import Path
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import ApplicationHandlerStop, ContextTypes
+from telegram.ext import ContextTypes
 
 from autosnab_bot.services import priceformation
 from autosnab_bot.services.response import send_document, send_response
@@ -168,18 +168,18 @@ async def _wait_supplier_price(update: Update, context: ContextTypes.DEFAULT_TYP
     )
 
 
-async def supplier_price_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Файлы после выбора поставщика копятся для priceformation, а не уходят в загрузку прайса бота."""
-    if PENDING_UPLOAD not in _user_data(context):
-        return
-    await _collect_supplier_file(update, context)
-    raise ApplicationHandlerStop
-
-
 @validate_user
-async def _collect_supplier_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def supplier_price_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Файлы после выбора поставщика копятся для загрузки в priceformation."""
     message = update.message
     if message is None or message.document is None:
+        return
+    if PENDING_UPLOAD not in _user_data(context):
+        await send_response(
+            update,
+            context,
+            response="Чтобы загрузить прайс поставщика, выберите его: /pf → «Загрузить прайс поставщика»",
+        )
         return
     doc = message.document
     if not priceformation.is_supplier_file(doc.file_name):

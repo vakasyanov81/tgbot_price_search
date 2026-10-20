@@ -10,5 +10,7 @@ async def help_(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_response(
         update,
         context,
-        response="Для поиска по прайсу необходимо загрузить файл price.xlsx выполнив команду /download",
+        response="Напишите название позиции, бот найдёт её в прайсе (по умолчанию в прайсе для Дрома).\n"
+        "/source - выбрать прайс для поиска\n"
+        "/pf - сформировать прайсы, обновить и загрузить прайсы поставщиков",
     )

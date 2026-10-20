@@ -9,4 +9,4 @@ db.sqlite3
 .env
 .ruff_cache
 .env*
-upload/
+bot_state.pickle

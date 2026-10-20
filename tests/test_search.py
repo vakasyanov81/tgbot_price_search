@@ -59,6 +59,5 @@ def test_is_loaded_reflects_loader_result():
     assert PriceListSearch(PriceListSimpleDataLoader({}, loaded=False)).is_loaded is False
 
 
-def test_missing_price_file_is_not_loaded(tmp_path, monkeypatch):
-    monkeypatch.setattr("autosnab_bot.config.UPLOAD_DIR", tmp_path)
-    assert PriceListDataLoader("missing.xlsx").load_price() is False
+def test_missing_price_file_is_not_loaded(tmp_path):
+    assert PriceListDataLoader(tmp_path / "missing.xlsx").load_price() is False
