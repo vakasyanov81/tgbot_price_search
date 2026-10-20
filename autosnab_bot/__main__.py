@@ -35,6 +35,8 @@ def check_config() -> None:
 
 def main() -> None:
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+    # httpx на INFO пишет в лог полный URL запроса, а в нём токен бота.
+    logging.getLogger('httpx').setLevel(logging.WARNING)
     check_config()
     persistence = PicklePersistence(filepath=config.STATE_FILE)
     application = (

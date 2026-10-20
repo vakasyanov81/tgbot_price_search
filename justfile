@@ -9,6 +9,45 @@ help:
 run:
     uv run python -m autosnab_bot
 
+# Запустить бота в фоне (PID в bot.pid, лог в bot.log)
+start:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f bot.pid ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+        echo "Бот уже запущен (PID $(cat bot.pid))"; exit 0
+    fi
+    nohup setsid uv run python -m autosnab_bot >> bot.log 2>&1 &
+    echo $! > bot.pid
+    echo "Бот запущен (PID $(cat bot.pid)), лог: bot.log"
+
+# Остановить фонового бота
+stop:
+    #!/usr/bin/env bash
+    if [ -f bot.pid ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+        pkill -TERM -P "$(cat bot.pid)" || true
+        kill "$(cat bot.pid)" || true
+        echo "Бот остановлен"
+    else
+        echo "Бот не запущен"
+    fi
+    rm -f bot.pid
+
+# Перезапустить фонового бота
+restart: stop start
+
+# Состояние фонового бота
+status:
+    #!/usr/bin/env bash
+    if [ -f bot.pid ] && kill -0 "$(cat bot.pid)" 2>/dev/null; then
+        echo "Бот работает (PID $(cat bot.pid))"
+    else
+        echo "Бот не запущен"
+    fi
+
+# Хвост лога фонового бота
+logs:
+    tail -f bot.log
+
 # Тесты с покрытием (порог 95%) — как в CI
 test *ARGS:
     uv run pytest {{ARGS}}

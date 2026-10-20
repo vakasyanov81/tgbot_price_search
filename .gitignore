@@ -15,3 +15,5 @@ htmlcov/
 coverage.xml
 .mypy_cache/
 .pytest_cache/
+bot.pid
+bot.log
