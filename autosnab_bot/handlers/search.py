@@ -6,7 +6,7 @@ from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.type_filter import handle_type_chip
-from autosnab_bot.services.price_search import prepare_search_result
+from autosnab_bot.services.price_search import search_result_lines
 from autosnab_bot.services.price_search_cache import get_search_instance
 from autosnab_bot.services.price_sources import PriceSource, get_source
 from autosnab_bot.services.response import edit_response, send_response
@@ -20,6 +20,9 @@ USER_SOURCE = "search_source"
 # Нужны, чтобы при редактировании запроса переписать ответ, а не присылать новый.
 SEARCH_REPLIES = "search_replies"
 MAX_SEARCH_REPLIES = 200
+
+# Telegram не принимает сообщения длиннее 4096 символов; длинные названия (диски) в 50 строк туда не влезают.
+MESSAGE_LIMIT = 4096
 
 
 def user_source(context: ContextTypes.DEFAULT_TYPE) -> PriceSource:
@@ -73,9 +76,25 @@ async def search_response(context: ContextTypes.DEFAULT_TYPE, text: str) -> str:
     header = [f"Источник: {html.escape(source.title)} ({html.escape(path.name)})"]
     if product_type:
         header.append(f"Тип товара: {html.escape(product_type)}")
-    header.append(f"Найдено {len(result)} позиций ")
-    found_txt = "\n".join(header) + "\n"
-    return found_txt + prepare_search_result(result)
+    lines = search_result_lines(result)
+    found = f"Найдено {len(result)} позиций "
+    shown = _lines_that_fit("\n".join([*header, found]), lines)
+    if shown < len(lines):
+        found += f"(показаны первые {shown}, уточните запрос)"
+    return "\n".join([*header, found, *lines[:shown]])
+
+
+def _lines_that_fit(header: str, lines: list[str]) -> int:
+    """Сколько первых строк результата помещается в одно сообщение вместе с заголовком."""
+    if len("\n".join([header, *lines])) <= MESSAGE_LIMIT:
+        return len(lines)
+    # Не влезает: оставляем место под «(показаны первые NN, уточните запрос)».
+    length = len(header) + 50
+    for count, line in enumerate(lines):
+        length += len(line) + 1
+        if length > MESSAGE_LIMIT:
+            return count
+    return len(lines)
 
 
 def _search_replies(context: ContextTypes.DEFAULT_TYPE) -> dict[int, int]:

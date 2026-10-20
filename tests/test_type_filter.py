@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -161,3 +162,25 @@ def test_access_denied_has_no_menu(monkeypatch):
     asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
     assert "нет доступа" in context.bot.sent[-1]["text"]
     assert context.bot.sent[-1]["reply_markup"] is None
+
+
+def test_long_result_fits_telegram_limit(monkeypatch):
+    long_title = "диск " + "x" * 150
+    items = {f"{long_title} {i}": [PriceInfo("1000", "", "4", i, product_type="Диск")] for i in range(50)}
+    search = PriceListSearch(Loader(items))
+    monkeypatch.setattr(search_module, "get_search_instance", lambda _key, _path: search)
+    monkeypatch.setattr(search_module.PriceSource, "latest_file", lambda _self: Path("price_drom_2026-10-20.xlsx"))
+    context = make_context({type_menu.USER_TYPE_FILTER: "Диск"})
+
+    text = asyncio.run(search_module.search_response(context, "диск"))  # type: ignore[arg-type]
+
+    assert len(text) <= search_module.MESSAGE_LIMIT
+    assert "Найдено 50 позиций (показаны первые " in text
+    shown = int(text.split("показаны первые ")[1].split(",")[0])
+    assert 0 < shown < 50
+    assert text.count("\n") == 2 + shown  # источник, тип, найдено + строки
+
+
+def test_short_result_is_not_marked_truncated():
+    lines = ["1. a", "2. b"]
+    assert search_module._lines_that_fit("header", lines) == 2

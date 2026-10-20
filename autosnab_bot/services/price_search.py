@@ -45,6 +45,10 @@ class PriceListSearch:
 
 
 def prepare_search_result(source: price_data) -> str:
+    return "\n".join(search_result_lines(source))
+
+
+def search_result_lines(source: price_data) -> list[str]:
     # добавить сортировку по цене, сначала дешевые.
     lines = []
     for row, (title, prices) in enumerate(source.items(), start=1):
@@ -54,7 +58,7 @@ def prepare_search_result(source: price_data) -> str:
         if prices[0].supplier:
             line += f" ({html.escape(prices[0].supplier)})"
         lines.append(line)
-    return "\n".join(lines)
+    return lines
 
 
 def try_to_int(val: str) -> str:

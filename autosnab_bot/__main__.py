@@ -12,6 +12,7 @@ from telegram.ext import (
 
 from autosnab_bot import config, handlers
 from autosnab_bot.handlers import priceformation, source
+from autosnab_bot.handlers.errors import on_error
 from autosnab_bot.services.product_types import get_product_types
 from autosnab_bot.services.validate_user import ALLOWED_USER_IDS
 
@@ -60,6 +61,8 @@ def main() -> None:
             block=False,
         )
     )
+
+    application.add_error_handler(on_error)
 
     application.run_polling()
 
