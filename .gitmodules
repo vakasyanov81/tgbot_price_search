@@ -1,0 +1,3 @@
+[submodule "priceformation"]
+	path = priceformation
+	url = git@github.com:vakasyanov81/priceformation.git

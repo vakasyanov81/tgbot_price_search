@@ -38,9 +38,11 @@ build-backend = "uv_build"
 [tool.black]
 line-length = 120
 skip-string-normalization = true
+extend-exclude = "^/priceformation/"
 
 [tool.ruff]
 line-length = 120
+extend-exclude = ["priceformation"]
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "C90",
@@ -52,4 +54,5 @@ ignore = ["A003"]
 "tests/*.py" = ["S101"]
 
 [tool.pyright]
+exclude = ["priceformation", "**/__pycache__", "**/.*"]
 reportUnnecessaryTypeIgnoreComment="warning"

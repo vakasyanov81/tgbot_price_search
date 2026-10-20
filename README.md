@@ -11,6 +11,22 @@
 
 Нужен Python 3.14 и [uv](https://docs.astral.sh/uv/). Версия закреплена в `.python-version`, uv подтянет её сам.
 
+В репозитории есть git-сабмодуль [priceformation](https://github.com/vakasyanov81/priceformation) (папка `priceformation/`), поэтому клонируйте вместе с ним:
+
+```bash
+git clone --recurse-submodules git@github.com:vakasyanov81/tgbot_price_search.git
+```
+
+Если репозиторий уже склонирован без сабмодуля, подтяните его:
+
+```bash
+git submodule update --init
+```
+
+Обновить сабмодуль до свежей версии: `git submodule update --remote priceformation`, затем закоммитить изменение папки `priceformation`.
+
+Установка зависимостей:
+
 ```bash
 uv sync
 ```
