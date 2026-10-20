@@ -65,6 +65,10 @@ def _add_handlers(application: Application[Any, Any, Any, Any, Any, Any]) -> Non
         CallbackQueryHandler(handlers.update_system, pattern=f'^{handlers.SCRIPT_UPDATE_CALLBACK}$', block=False)
     )
 
+    application.add_handler(
+        CallbackQueryHandler(handlers.export_logs, pattern=f'^{handlers.SCRIPT_LOGS_CALLBACK}$', block=False)
+    )
+
     application.add_error_handler(handlers.on_error)
 
 

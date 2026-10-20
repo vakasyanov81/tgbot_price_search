@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import pytest
 
@@ -14,11 +15,64 @@ def _fake_steps(ok: bool) -> list[StepResult]:
     return [StepResult('git pull --ff-only', ok, 'Already up to date.')]
 
 
-def test_script_manager_shows_update_button_to_admin() -> None:
+def test_script_manager_shows_update_and_logs_buttons_to_admin() -> None:
     context = make_context()
     asyncio.run(update_menu.script_manager(make_update(ADMIN_COMMAND), context))
 
-    assert keyboard_labels(context.bot.sent[0]) == ['Обновить систему']
+    assert keyboard_labels(context.bot.sent[0]) == ['Обновить систему', 'Выгрузить логи']
+
+
+def test_export_logs_sends_archive_and_removes_it(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    archive = tmp_path / 'autosnab-logs.zip'
+    archive.write_bytes(b'zip')
+
+    async def fake_build() -> Path:
+        return archive
+
+    sent: list[Path] = []
+
+    async def fake_send_document(_update: object, _context: object, path: Path) -> None:
+        sent.append(path)
+
+    monkeypatch.setattr(update_menu, 'build_logs_archive', fake_build)
+    monkeypatch.setattr(update_menu, 'send_document', fake_send_document)
+    context = make_context()
+    asyncio.run(update_menu.export_logs(make_update(callback_data=update_menu.LOGS_CALLBACK), context))
+
+    assert sent == [archive]
+    assert not archive.exists()
+
+
+def test_export_logs_ignores_message_without_callback(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+
+    async def fake_build() -> Path:
+        calls.append(1)
+        raise AssertionError('не должно вызываться')
+
+    monkeypatch.setattr(update_menu, 'build_logs_archive', fake_build)
+    context = make_context()
+    asyncio.run(update_menu.export_logs(make_update('/script_manager'), context))
+
+    assert calls == []
+    assert context.bot.sent == []
+
+
+def test_export_logs_ignores_non_admin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(validate_user, 'ADMIN_USER_IDS', frozenset())
+    calls: list[int] = []
+
+    async def fake_build() -> Path:
+        calls.append(1)
+        raise AssertionError('не должно вызываться')
+
+    monkeypatch.setattr(update_menu, 'build_logs_archive', fake_build)
+    context = make_context()
+    update = make_update(callback_data=update_menu.LOGS_CALLBACK, user_id=ALLOWED_USER)
+    asyncio.run(update_menu.export_logs(update, context))
+
+    assert calls == []
+    assert 'только администраторам' in context.bot.texts[0]
 
 
 def test_script_manager_denies_allowed_non_admin(monkeypatch: pytest.MonkeyPatch) -> None:
