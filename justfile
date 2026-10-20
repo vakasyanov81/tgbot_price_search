@@ -54,7 +54,7 @@ service-install:
     set -euo pipefail
     unit="$HOME/.config/systemd/user/autosnab-bot.service"
     mkdir -p "$(dirname "$unit")"
-    sed -e "s|@WORKDIR@|$PWD|" -e "s|@UV@|$(command -v uv)|" deploy/autosnab-bot.service > "$unit"
+    sed -e "s|@WORKDIR@|$PWD|" -e "s|@UV@|$(command -v uv)|" -e "s|@UVDIR@|$(dirname "$(command -v uv)")|" deploy/autosnab-bot.service > "$unit"
     systemctl --user daemon-reload
     systemctl --user enable --now autosnab-bot.service
     echo "Сервис установлен. Чтобы он работал без входа в систему и стартовал при загрузке: sudo loginctl enable-linger $USER"
