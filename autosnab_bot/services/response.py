@@ -1,6 +1,7 @@
+from pathlib import Path
 from typing import cast
 
-from telegram import Chat, InlineKeyboardMarkup, LinkPreviewOptions, Update
+from telegram import Chat, InlineKeyboardMarkup, LinkPreviewOptions, Message, Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
@@ -10,17 +11,22 @@ async def send_response(
     context: ContextTypes.DEFAULT_TYPE,
     response: str,
     keyboard: InlineKeyboardMarkup | None = None,
-) -> None:
+) -> Message:
     args = {}
     if keyboard:
         args["reply_markup"] = keyboard
-    await context.bot.send_message(
+    return await context.bot.send_message(
         chat_id=_get_chat_id(update),
         link_preview_options=LinkPreviewOptions(is_disabled=True),
         text=response,
         parse_mode=ParseMode.HTML,
         **args,
     )
+
+
+async def send_document(update: Update, context: ContextTypes.DEFAULT_TYPE, path: Path) -> None:
+    with path.open("rb") as document:
+        await context.bot.send_document(chat_id=_get_chat_id(update), document=document, filename=path.name)
 
 
 def _get_chat_id(update: Update) -> int:

@@ -1,13 +1,15 @@
 import logging
 
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 from autosnab_bot import config, handlers
+from autosnab_bot.handlers.priceformation import CALLBACK_PREFIX
 from autosnab_bot.services.validate_user import ALLOWED_USER_IDS
 
 COMMAND_HANDLERS = {
     "start": handlers.start,
     "help": handlers.help_,
+    "pf": handlers.priceformation_menu,
 }
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -28,7 +30,18 @@ def main() -> None:
 
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handlers.search))
 
+    # Группа -1 раньше download: после выбора поставщика в /pf файл уходит в priceformation.
+    application.add_handler(MessageHandler(filters.Document.ALL, handlers.supplier_price_upload), group=-1)
     application.add_handler(MessageHandler(filters.Document.ALL, handlers.download))
+
+    # block=False: пока priceformation формирует прайс, бот продолжает отвечать на поиск.
+    application.add_handler(
+        CallbackQueryHandler(
+            handlers.priceformation_action,
+            pattern=f"^{CALLBACK_PREFIX}",
+            block=False,
+        )
+    )
 
     application.run_polling()
 
