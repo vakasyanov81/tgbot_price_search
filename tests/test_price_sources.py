@@ -63,7 +63,7 @@ def test_loader_reads_columns_by_header_drom(tmp_path):
     )
     loader = PriceListDataLoader(path)
     assert loader.load_price() is True
-    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "", "4.0", 1, "")]}
+    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "", "4.0", 1, "", "Шина")]}
 
 
 def test_loader_reads_supplier_and_purchase_inner(tmp_path):
@@ -73,7 +73,7 @@ def test_loader_reads_supplier_and_purchase_inner(tmp_path):
     )
     loader = PriceListDataLoader(path)
     assert loader.load_price() is True
-    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "4000.0", "4.0", 1, "Пошк")]}
+    assert loader.get_price_list() == {"kama 185/65r15": [PriceInfo("5000.0", "4000.0", "4.0", 1, "Пошк", "Шина")]}
 
 
 def test_loader_rejects_file_without_title_column(tmp_path):
@@ -97,3 +97,12 @@ def test_cache_reloads_changed_file(tmp_path, monkeypatch):
     second = price_search_cache.get_search_instance("drom", path)
     assert second is not first
     assert "nokian" in second.search("nokian")
+
+
+def test_loader_strips_corrected_type_mark(tmp_path):
+    path = write_price(
+        tmp_path / "inner.xlsx", [INNER_HEADER, ["Легкогрузовая шина*", "Kama 185R14C", 1, 2, 3, "Пошк"]]
+    )
+    loader = PriceListDataLoader(path)
+    loader.load_price()
+    assert loader.get_price_list()["kama 185r14c"][0].product_type == "Легкогрузовая шина"

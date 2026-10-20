@@ -1,6 +1,7 @@
 import logging
 
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CallbackQueryHandler,
     CommandHandler,
@@ -11,6 +12,7 @@ from telegram.ext import (
 
 from autosnab_bot import config, handlers
 from autosnab_bot.handlers import priceformation, source
+from autosnab_bot.services.product_types import get_product_types
 from autosnab_bot.services.validate_user import ALLOWED_USER_IDS
 
 COMMAND_HANDLERS = {
@@ -30,9 +32,16 @@ if not ALLOWED_USER_IDS:
     raise ValueError("ALLOW_USER_LIST variable must contain at least one user ID in .env.")
 
 
+async def _warm_up(_application: Application) -> None:
+    # Типы товара для меню внизу: CLI отвечает несколько секунд, первый поиск не должен его ждать.
+    await get_product_types()
+
+
 def main() -> None:
     persistence = PicklePersistence(filepath=config.STATE_FILE)
-    application = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).persistence(persistence).build()
+    application = (
+        ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).persistence(persistence).post_init(_warm_up).build()
+    )
 
     for command_name, command_handler in COMMAND_HANDLERS.items():
         application.add_handler(CommandHandler(command_name, command_handler))

@@ -16,6 +16,7 @@ README_FILE = PRICEFORMATION_DIR / "README.md"
 
 PARSE = "parse"
 GET_SUPPLIERS = "get_supliers"
+GET_PRODUCT_TYPES = "get_product_types"
 LOAD_SUPPLIER_PRICES = "load_supplier_prices"
 # Что принимает load_supplier_prices: прайсы, json-файлы поставщика (territories.json, tire.json …) и zip с ними.
 SUPPLIER_FILE_EXTENSIONS = (".xls", ".xlsx", ".json", ".zip")
@@ -104,6 +105,16 @@ async def get_suppliers() -> dict[str, str]:
     if not isinstance(catalog, dict):
         raise RuntimeError(tail(result.output, 300) or "не удалось получить список поставщиков")
     return {supplier_id: entry["sup_title"] for supplier_id, entry in catalog.items()}
+
+
+async def get_product_types() -> list[str]:
+    """Типы товара, которые priceformation ставит в колонку «Тип товара» прайсов."""
+    result = await run_command(GET_PRODUCT_TYPES)
+    payload = result.json() if result.ok else None
+    types = payload.get("types") if isinstance(payload, dict) else None
+    if not isinstance(types, list):
+        raise RuntimeError(tail(result.output, 300) or "не удалось получить типы товара")
+    return [str(product_type) for product_type in types]
 
 
 async def load_supplier_prices(supplier_id: str, sources: list[Path]) -> CommandResult:

@@ -10,6 +10,9 @@ PRICE_SELLING_HEADER = "Цена"
 PRICE_PURCHASE_HEADER = "Цена закуп."
 REST_HEADER = "Остаток"
 SUPPLIER_HEADER = "Поставщик"
+PRODUCT_TYPE_HEADER = "Тип товара"
+# priceformation помечает звёздочкой тип, исправленный по названию: «Легкогрузовая шина*».
+CORRECTED_TYPE_MARK = "*"
 
 
 class PriceInfo(NamedTuple):
@@ -18,6 +21,7 @@ class PriceInfo(NamedTuple):
     rest: str
     row_id: int
     supplier: str = ""
+    product_type: str = ""
 
 
 price_data = dict[str, list[PriceInfo]]
@@ -56,6 +60,7 @@ class PriceListDataLoader:
                 rest=cell(row, REST_HEADER),
                 row_id=i,
                 supplier=cell(row, SUPPLIER_HEADER),
+                product_type=cell(row, PRODUCT_TYPE_HEADER).strip().removesuffix(CORRECTED_TYPE_MARK),
             )
             self.price_list.setdefault(title, []).append(info)
         return True
