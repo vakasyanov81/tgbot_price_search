@@ -56,3 +56,7 @@ ignore = ["A003"]
 [tool.pyright]
 exclude = ["priceformation", "**/__pycache__", "**/.*"]
 reportUnnecessaryTypeIgnoreComment="warning"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["priceformation"]
