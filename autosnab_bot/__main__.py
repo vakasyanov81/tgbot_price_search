@@ -33,8 +33,14 @@ def check_config() -> None:
         raise ValueError('ALLOW_USER_LIST variable must contain at least one user ID in .env.')
 
 
-def main() -> None:
+def _setup_logging() -> None:
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+    # httpx на INFO пишет в лог полный URL запроса, а в нём токен бота.
+    logging.getLogger('httpx').setLevel(logging.WARNING)
+
+
+def main() -> None:
+    _setup_logging()
     check_config()
     persistence = PicklePersistence(filepath=config.STATE_FILE)
     application = (

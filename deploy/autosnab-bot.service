@@ -1,0 +1,19 @@
+# Шаблон пользовательского systemd-сервиса; @WORKDIR@, @UV@ и @UVDIR@ подставляет `just service-install`.
+[Unit]
+Description=autosnab Telegram bot
+After=network-online.target
+Wants=network-online.target
+# Не ограничивать число перезапусков за интервал: бот должен подниматься всегда.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=@WORKDIR@
+# Бот сам вызывает `uv` (CLI priceformation); у systemd урезанный PATH без каталога uv.
+Environment=PATH=@UVDIR@:/usr/local/bin:/usr/bin:/bin
+ExecStart=@UV@ run --locked python -m autosnab_bot
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
