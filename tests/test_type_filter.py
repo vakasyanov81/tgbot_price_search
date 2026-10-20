@@ -226,23 +226,16 @@ def test_reply_shows_total_and_cheapest(monkeypatch):
     assert len(lines) == 2 + 50
 
 
-def test_search_reply_carries_menu_only_when_chat_lacks_it(monkeypatch):
+def test_search_reply_always_carries_current_menu(monkeypatch):
     async def fake_response(_context, text):
         return f"результат: {text}"
 
     monkeypatch.setattr(search_module, "search_response", fake_response)
     context = make_context()
+    for query in ("r15", "r16"):
+        asyncio.run(search_module.search(make_update(query), context))  # type: ignore[arg-type]
+        assert "✅ Все" in keyboard_labels(context.bot.sent[-1])
 
-    # Новый чат: меню ещё не показано — первый ответ несёт его.
-    asyncio.run(search_module.search(make_update("r15"), context))  # type: ignore[arg-type]
-    assert context.bot.sent[-1]["reply_markup"] is not None
-
-    # Меню уже на экране: ответ без клавиатуры, чтобы его можно было отредактировать.
-    asyncio.run(search_module.search(make_update("r16"), context))  # type: ignore[arg-type]
-    assert context.bot.sent[-1]["reply_markup"] is None
-
-    # Сменили фильтр: ответ на чипс несёт обновлённое меню, следующий поиск — снова без него.
     asyncio.run(search_module.search(make_update("Диск"), context))  # type: ignore[arg-type]
-    assert "✅ Диск" in keyboard_labels(context.bot.sent[-1])
     asyncio.run(search_module.search(make_update("r17"), context))  # type: ignore[arg-type]
-    assert context.bot.sent[-1]["reply_markup"] is None
+    assert "✅ Диск" in keyboard_labels(context.bot.sent[-1])

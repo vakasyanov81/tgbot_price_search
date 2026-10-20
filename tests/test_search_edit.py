@@ -13,19 +13,19 @@ search_module = importlib.import_module("autosnab_bot.handlers.search")
 
 
 class FakeBot:
-    def __init__(self, edit_error=None):
+    def __init__(self, delete_error=None):
         self.sent = []
-        self.edited = []
-        self.edit_error = edit_error
+        self.deleted = []
+        self.delete_error = delete_error
 
     async def send_message(self, **kwargs):
-        self.sent.append(kwargs["text"])
+        self.sent.append(kwargs)
         return SimpleNamespace(message_id=100 + len(self.sent))
 
-    async def edit_message_text(self, **kwargs):
-        if self.edit_error:
-            raise self.edit_error
-        self.edited.append((kwargs["message_id"], kwargs["text"]))
+    async def delete_message(self, chat_id, message_id):
+        if self.delete_error:
+            raise self.delete_error
+        self.deleted.append(message_id)
 
 
 @pytest.fixture(autouse=True)
@@ -53,49 +53,74 @@ def make_update(text, message_id=10, edited=False):
     )
 
 
+def make_context(bot=None):
+    return SimpleNamespace(bot=bot or FakeBot(), chat_data={}, user_data={})
+
+
 def run(update, context):
     asyncio.run(search_module.search(update, context))  # type: ignore[arg-type]
 
 
-def test_edited_query_edits_previous_reply():
-    context = SimpleNamespace(bot=FakeBot(), chat_data={}, user_data={})
+def texts(bot):
+    return [kwargs["text"] for kwargs in bot.sent]
+
+
+def test_edited_query_replaces_previous_reply():
+    context = make_context()
     run(make_update("185 65"), context)
     run(make_update("185 70", edited=True), context)
 
-    assert context.bot.sent == ["результат: 185 65"]
-    assert context.bot.edited == [(101, "результат: 185 70")]
+    assert texts(context.bot) == ["результат: 185 65", "результат: 185 70"]
+    assert context.bot.deleted == [101]
+    assert context.chat_data[search_module.SEARCH_REPLIES][10][0] == 102
+
+
+def test_every_reply_carries_menu():
+    context = make_context()
+    run(make_update("185 65"), context)
+    run(make_update("185 70", edited=True), context)
+
+    assert all(kwargs["reply_markup"] is not None for kwargs in context.bot.sent)
 
 
 def test_edited_query_without_known_reply_sends_new():
-    context = SimpleNamespace(bot=FakeBot(), chat_data={}, user_data={})
+    context = make_context()
     run(make_update("185 70", edited=True), context)
 
-    assert context.bot.sent == ["результат: 185 70"]
-    assert context.chat_data[search_module.SEARCH_REPLIES] == {10: 101}
+    assert texts(context.bot) == ["результат: 185 70"]
+    assert context.bot.deleted == []
 
 
 def test_unchanged_result_is_not_resent():
-    context = SimpleNamespace(bot=FakeBot(), chat_data={}, user_data={})
+    context = make_context()
     run(make_update("kama"), context)
-    context.bot.edit_error = BadRequest("Message is not modified: specified new message content ...")
     run(make_update("kama", edited=True), context)
 
-    assert context.bot.sent == ["результат: kama"]
+    assert texts(context.bot) == ["результат: kama"]
+    assert context.bot.deleted == []
 
 
-def test_deleted_reply_gets_new_one():
-    context = SimpleNamespace(bot=FakeBot(), chat_data={}, user_data={})
+def test_undeletable_reply_still_gets_new_one():
+    context = make_context(FakeBot(delete_error=BadRequest("Message can't be deleted")))
     run(make_update("kama"), context)
-    context.bot.edit_error = BadRequest("Message to edit not found")
     run(make_update("nokian", edited=True), context)
 
-    assert context.bot.sent == ["результат: kama", "результат: nokian"]
-    assert context.chat_data[search_module.SEARCH_REPLIES] == {10: 102}
+    assert texts(context.bot) == ["результат: kama", "результат: nokian"]
+    assert context.chat_data[search_module.SEARCH_REPLIES][10][0] == 102
+
+
+def test_legacy_reply_record_is_replaced():
+    context = make_context()
+    context.chat_data[search_module.SEARCH_REPLIES] = {10: 55}
+    run(make_update("nokian", edited=True), context)
+
+    assert context.bot.deleted == [55]
+    assert context.chat_data[search_module.SEARCH_REPLIES][10][0] == 101
 
 
 def test_replies_map_is_bounded(monkeypatch):
     monkeypatch.setattr(search_module, "MAX_SEARCH_REPLIES", 2)
-    context = SimpleNamespace(bot=FakeBot(), chat_data={}, user_data={})
+    context = make_context()
     for message_id in (1, 2, 3):
         run(make_update("q", message_id=message_id), context)
 

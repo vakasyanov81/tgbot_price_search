@@ -1,23 +1,27 @@
 import asyncio
+import hashlib
 import html
+import logging
 
 from telegram import Update
-from telegram.error import BadRequest
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.type_filter import handle_type_chip
 from autosnab_bot.services.price_search import search_result_lines
 from autosnab_bot.services.price_search_cache import get_search_instance
 from autosnab_bot.services.price_sources import PriceSource, get_source
-from autosnab_bot.services.response import edit_response, send_response
-from autosnab_bot.services.type_menu import menu_is_current, user_type_filter
+from autosnab_bot.services.response import send_response
+from autosnab_bot.services.type_menu import user_type_filter
 from autosnab_bot.services.validate_user import validate_user
+
+logger = logging.getLogger(__name__)
 
 # Ключ выбранного прайса в user_data (см. /source).
 USER_SOURCE = "search_source"
 
-# Ответы на поисковые запросы в chat_data: ИД сообщения с запросом → ИД ответа бота.
-# Нужны, чтобы при редактировании запроса переписать ответ, а не присылать новый.
+# Ответы на поисковые запросы в chat_data: ИД сообщения с запросом → ответ бота.
+# Нужны, чтобы при редактировании запроса заменить ответ, а не добавить ещё один.
 SEARCH_REPLIES = "search_replies"
 MAX_SEARCH_REPLIES = 200
 
@@ -34,7 +38,7 @@ def user_source(context: ContextTypes.DEFAULT_TYPE) -> PriceSource:
 
 @validate_user
 async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Поиск по тексту сообщения; отредактированный запрос переписывает прежний ответ."""
+    """Поиск по тексту сообщения; отредактированный запрос заменяет прежний ответ новым."""
     message = update.message or update.edited_message
     if message is None or message.text is None:
         return
@@ -44,21 +48,18 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     response = await search_response(context, message.text)
+    digest = _digest(response)
     replies = _search_replies(context)
-    reply_id = replies.get(message.message_id) if update.edited_message else None
-    if reply_id is not None:
-        try:
-            await edit_response(update, context, reply_id, response)
-            return
-        except BadRequest as exc:
-            # Результат не изменился — ответ уже верный.
-            if "not modified" in str(exc).lower():
-                return
-            # Иначе ответ удалён или его нельзя изменить: пришлём новый.
+    previous = replies.get(message.message_id) if update.edited_message else None
+    if previous is not None and previous[1] == digest:
+        return  # результат не изменился — прежний ответ верный
 
-    # Меню внизу остаётся от прежних сообщений; ответ без него можно будет отредактировать.
-    reply = await send_response(update, context, response=response, with_menu=not await menu_is_current(context))
-    replies[message.message_id] = reply.message_id
+    # Ответ несёт меню внизу (иначе клиент может его потерять), а сообщение с таким меню
+    # Telegram редактировать не даёт: заменяем ответ — новый присылаем, прежний удаляем.
+    reply = await send_response(update, context, response=response)
+    if previous is not None:
+        await _delete_reply(update, context, previous[0])
+    replies[message.message_id] = (reply.message_id, digest)
     while len(replies) > MAX_SEARCH_REPLIES:
         del replies[next(iter(replies))]
 
@@ -103,7 +104,26 @@ def _lines_that_fit(header: str, lines: list[str], note_needed: bool) -> int:
     return len(lines)
 
 
-def _search_replies(context: ContextTypes.DEFAULT_TYPE) -> dict[int, int]:
+def _search_replies(context: ContextTypes.DEFAULT_TYPE) -> dict[int, tuple[int, str]]:
+    """ИД запроса → (ИД ответа, отпечаток текста ответа). Старые записи (только ИД ответа) приводятся к паре."""
     if context.chat_data is None:
         return {}
-    return context.chat_data.setdefault(SEARCH_REPLIES, {})
+    replies = context.chat_data.setdefault(SEARCH_REPLIES, {})
+    for query_id, record in replies.items():
+        if isinstance(record, int):
+            replies[query_id] = (record, "")
+    return replies
+
+
+def _digest(response: str) -> str:
+    return hashlib.sha256(response.encode()).hexdigest()[:16]
+
+
+async def _delete_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, message_id: int) -> None:
+    if update.effective_chat is None:
+        return
+    try:
+        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message_id)
+    except TelegramError:
+        # Уже удалён пользователем или старше 48 часов — остаётся в истории, новый ответ уже отправлен.
+        logger.info("Не удалось удалить прежний ответ %s", message_id)
