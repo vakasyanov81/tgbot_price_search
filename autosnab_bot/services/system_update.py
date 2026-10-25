@@ -10,7 +10,17 @@ REPO_DIR = config.BASE_DIR.parent
 SERVICE_NAME = 'autosnab-bot.service'
 GIT_PULL: tuple[str, ...] = ('git', 'pull', '--ff-only')
 GIT_SUBMODULES: tuple[str, ...] = ('git', 'submodule', 'update', '--init', '--recursive')
-RESTART_COMMAND: tuple[str, ...] = ('systemctl', '--user', 'restart', SERVICE_NAME)
+# systemd-run выносит перезапуск в отдельный юнит: иначе systemctl наследует cgroup бота и гибнет вместе с ним
+RESTART_COMMAND: tuple[str, ...] = (
+    'systemd-run',
+    '--user',
+    '--collect',
+    '--unit=autosnab-bot-restart',
+    'systemctl',
+    '--user',
+    'restart',
+    SERVICE_NAME,
+)
 
 
 @dataclass(frozen=True)

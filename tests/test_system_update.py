@@ -41,7 +41,7 @@ def test_update_code_runs_pull_then_submodules(monkeypatch: pytest.MonkeyPatch) 
     assert all(outcome.ok for outcome in outcomes)
 
 
-def test_restart_service_uses_user_systemd_unit(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_restart_service_runs_in_transient_unit_outside_bot_cgroup(monkeypatch: pytest.MonkeyPatch) -> None:
     commands: list[tuple[str, ...]] = []
 
     async def fake_run(command: tuple[str, ...]) -> system_update.StepResult:
@@ -51,4 +51,15 @@ def test_restart_service_uses_user_systemd_unit(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(system_update, '_run', fake_run)
     asyncio.run(system_update.restart_service())
 
-    assert commands == [('systemctl', '--user', 'restart', 'autosnab-bot.service')]
+    assert commands == [
+        (
+            'systemd-run',
+            '--user',
+            '--collect',
+            '--unit=autosnab-bot-restart',
+            'systemctl',
+            '--user',
+            'restart',
+            'autosnab-bot.service',
+        )
+    ]
