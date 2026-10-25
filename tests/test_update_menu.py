@@ -15,11 +15,11 @@ def _fake_steps(ok: bool) -> list[StepResult]:
     return [StepResult('git pull --ff-only', ok, 'Already up to date.')]
 
 
-def test_script_manager_shows_update_and_logs_buttons_to_admin() -> None:
+def test_script_manager_shows_update_logs_and_vendors_buttons_to_admin() -> None:
     context = make_context()
     asyncio.run(update_menu.script_manager(make_update(ADMIN_COMMAND), context))
 
-    assert keyboard_labels(context.bot.sent[0]) == ['Обновить систему', 'Выгрузить логи']
+    assert keyboard_labels(context.bot.sent[0]) == ['Обновить систему', 'Выгрузить логи', 'Поставщики']
 
 
 def test_export_logs_sends_archive_and_removes_it(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

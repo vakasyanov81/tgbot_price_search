@@ -3,6 +3,7 @@ import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from autosnab_bot.handlers.vendor_menu import VENDORS_CALLBACK
 from autosnab_bot.services.log_export import build_logs_archive
 from autosnab_bot.services.response import send_document, send_response
 from autosnab_bot.services.system_update import StepResult, restart_service, update_code
@@ -14,6 +15,7 @@ MENU = InlineKeyboardMarkup(
     [
         [InlineKeyboardButton('Обновить систему', callback_data=UPDATE_CALLBACK)],
         [InlineKeyboardButton('Выгрузить логи', callback_data=LOGS_CALLBACK)],
+        [InlineKeyboardButton('Поставщики', callback_data=VENDORS_CALLBACK)],
     ]
 )
 # Telegram режет сообщение на 4096 символах; хвост вывода важнее начала — там ошибка.

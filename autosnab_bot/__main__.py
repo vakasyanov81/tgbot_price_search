@@ -42,6 +42,15 @@ def _setup_logging() -> None:
     logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
+def _add_vendor_handlers(application: Application[Any, Any, Any, Any, Any, Any]) -> None:
+    application.add_handler(
+        CallbackQueryHandler(handlers.show_vendors, pattern=f'^{handlers.SCRIPT_VENDORS_CALLBACK}$', block=False)
+    )
+    application.add_handler(
+        CallbackQueryHandler(handlers.switch_vendor, pattern=f'^{handlers.SCRIPT_VENDOR_PREFIX}', block=False)
+    )
+
+
 def _add_handlers(application: Application[Any, Any, Any, Any, Any, Any]) -> None:
     for command_name, command_handler in COMMAND_HANDLERS.items():
         application.add_handler(CommandHandler(command_name, command_handler))
@@ -68,6 +77,8 @@ def _add_handlers(application: Application[Any, Any, Any, Any, Any, Any]) -> Non
     application.add_handler(
         CallbackQueryHandler(handlers.export_logs, pattern=f'^{handlers.SCRIPT_LOGS_CALLBACK}$', block=False)
     )
+
+    _add_vendor_handlers(application)
 
     application.add_error_handler(handlers.on_error)
 
