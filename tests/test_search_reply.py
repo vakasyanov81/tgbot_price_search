@@ -45,7 +45,7 @@ def test_reply_counts_all_and_shows_fifty(monkeypatch: pytest.MonkeyPatch) -> No
     titles_prices = many_prices()
     lines = reply_for(monkeypatch, titles_prices, 'kama').split('\n')
     assert lines[1] == f'Найдено {MANY} позиций, показаны {search_reply.MAX_RESULTS} самых дешёвых — уточните запрос'
-    assert lines[2].startswith('1. kama 0 - 1000Руб.')
+    assert lines[2].startswith('1. kama 0 - р/1000р')
     assert len(lines) == 2 + search_reply.MAX_RESULTS
 
 
