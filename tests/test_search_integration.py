@@ -1,0 +1,68 @@
+"""Выбор источника и поиск с настоящим чтением Excel, без сети и боевых файлов."""
+
+import asyncio
+from pathlib import Path
+
+import pytest
+from openpyxl import load_workbook
+
+from autosnab_bot import handlers
+from autosnab_bot.services import price_sources
+from tests.fakes import keyboard_labels, make_context, make_update
+from tests.price_helpers import DROM_HEADER, write_price
+
+
+@pytest.mark.parametrize(
+    ('source_key', 'file_name', 'source_title', 'expected_positions'),
+    [
+        ('drom', 'price_drom_akb_2026-11-17.xlsx', 'Прайс для Дрома (АКБ)', ['1. АКБ 255 - р/6000р 2 шт.']),
+        (
+            'inner',
+            'price_2026-11-17.xlsx',
+            'Общий прайс',
+            ['1. Шина 255 - р/5000р 4 шт.', '2. АКБ 255 - 4500р/6000р 2 шт. (Поставщик АКБ)'],
+        ),
+    ],
+)
+def test_selected_source_searches_real_workbook(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    source_key: str,
+    file_name: str,
+    source_title: str,
+    expected_positions: list[str],
+) -> None:
+    write_price(
+        tmp_path / 'price_drom_akb_2026-11-17.xlsx',
+        [DROM_HEADER, ('Аккумулятор', 'Бренд', 'АКБ 255', '', '', 6000, 2, '')],
+        sheet='Аккумуляторы',
+    )
+    common = write_price(
+        tmp_path / 'price_2026-11-17.xlsx',
+        [DROM_HEADER, ('Шина', 'Бренд', 'Шина 255', '', '', 5000, 4, '')],
+        sheet='Шины и диски',
+    )
+    workbook = load_workbook(common)
+    batteries = workbook.create_sheet('Аккумуляторы')
+    batteries.append(['Название', 'Цена продажи', 'Закупочная цена', 'Остаток', 'Поставщик'])
+    batteries.append(['АКБ 255', 6000, 4500, 2, 'Поставщик АКБ'])
+    workbook.save(common)
+    monkeypatch.setattr(price_sources, 'RESULT_DIR', tmp_path)
+    context = make_context()
+
+    async def choose_and_search() -> None:
+        await handlers.choose_source(make_update('/source'), context)
+        await handlers.set_source(make_update(callback_data=f'src:{source_key}'), context)
+        await handlers.search(make_update('255'), context)
+
+    asyncio.run(choose_and_search())
+
+    labels = keyboard_labels(context.bot.sent[0])
+    expected_button = f'{source_title}: {file_name}'
+    assert any(expected_button in label for label in labels)
+    assert context.bot.texts[1] == f'Поиск будет идти по: <b>{source_title}</b>'
+    assert context.bot.texts[-1].splitlines() == [
+        f'Источник: {source_title} ({file_name})',
+        f'Найдено {len(expected_positions)} позиций',
+        *expected_positions,
+    ]
