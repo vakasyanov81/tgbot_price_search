@@ -55,9 +55,10 @@ class _Columns:
 
 
 class PriceListDataLoader:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, sheet_name: str | None = None) -> None:
         self.price_list: price_data = {}
         self.path = path
+        self.sheet_name = sheet_name
 
     def load_price(self) -> bool:
         loaded = False
@@ -83,7 +84,10 @@ class PriceListDataLoader:
         if not self.path.exists():
             return
         workbook = CalamineWorkbook.from_path(str(self.path))
-        for name in workbook.sheet_names:
+        names = workbook.sheet_names
+        if self.sheet_name is not None:
+            names = [name for name in names if name == self.sheet_name]
+        for name in names:
             yield name, workbook.get_sheet_by_name(name).to_python()
 
     def _add_row(self, columns: _Columns, row: Sequence[object], row_id: int, default_type: str) -> None:

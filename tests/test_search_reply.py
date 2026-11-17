@@ -28,7 +28,7 @@ def reply_for(
     product_type: str | None = None,
 ) -> str:
     search = PriceListSearch(StubLoader(titles_prices))
-    monkeypatch.setattr(search_reply, 'get_search_instance', lambda _key, _path: search)
+    monkeypatch.setattr(search_reply, 'get_search_instance', lambda _key, _path, _sheet: search)
     monkeypatch.setattr(PriceSource, 'latest_file', lambda _source: DROM_FILE)
     return asyncio.run(search_reply.search_reply(DEFAULT_SOURCE, product_type, text))
 
@@ -45,7 +45,7 @@ def test_reply_counts_all_and_shows_fifty(monkeypatch: pytest.MonkeyPatch) -> No
     titles_prices = many_prices()
     lines = reply_for(monkeypatch, titles_prices, 'kama').split('\n')
     assert lines[1] == f'Найдено {MANY} позиций, показаны {search_reply.MAX_RESULTS} самых дешёвых — уточните запрос'
-    assert lines[2].startswith('1. kama 0 - р/1000р')
+    assert lines[2].startswith('1. kama 0 - 1000р')
     assert len(lines) == 2 + search_reply.MAX_RESULTS
 
 
@@ -75,7 +75,7 @@ def test_reply_when_price_not_ready(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_reply_when_price_unreadable(monkeypatch: pytest.MonkeyPatch) -> None:
     search = PriceListSearch(StubLoader({}, loaded=False))
-    monkeypatch.setattr(search_reply, 'get_search_instance', lambda _key, _path: search)
+    monkeypatch.setattr(search_reply, 'get_search_instance', lambda _key, _path, _sheet: search)
     monkeypatch.setattr(PriceSource, 'latest_file', lambda _source: DROM_FILE)
     reply = asyncio.run(search_reply.search_reply(DEFAULT_SOURCE, None, 'kama'))
     assert reply.startswith(f'Не удалось прочитать {DROM_FILE.name}')

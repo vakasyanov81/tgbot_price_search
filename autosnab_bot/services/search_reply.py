@@ -26,7 +26,7 @@ async def search_reply(source: PriceSource, product_type: str | None, text: str)
     if path is None:
         not_ready = f'{html.escape(source.title)} ещё не сформирован. {source.how_to_make}.'
         return f'{not_ready}\nВыбрать другой прайс: /source'
-    price_search = await asyncio.to_thread(get_search_instance, source.key, path)
+    price_search = await asyncio.to_thread(get_search_instance, source.key, path, source.sheet_name)
     if not price_search.is_loaded:
         return f'Не удалось прочитать {html.escape(path.name)}: нет листов с колонкой «Номенклатура» или «Название»'
     # Все совпадения нужны для общего числа найденных; показываются самые дешёвые.

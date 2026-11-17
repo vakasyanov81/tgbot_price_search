@@ -34,4 +34,6 @@ def _result_line(row: int, title: str, prices: list[PriceInfo]) -> str:
 def _price_pair(position: PriceInfo) -> str:
     purchase = html.escape(try_to_int(position.price_purchase))
     selling = html.escape(try_to_int(position.price))
+    if not purchase:
+        return f'{selling}р'
     return f'{purchase}р/{selling}р'

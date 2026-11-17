@@ -112,3 +112,6 @@ uv run pip-audit                               # уязвимости завис
 ```
 
 То же короче через [just](https://github.com/casey/just): `just ci` — все проверки и тесты, `just check` — проверки без тестов, `just format` — автоформат. Перед коммитом проверки запускает pre-commit (`.pre-commit-config.yaml`), в GitHub — workflow `.github/workflows/python-app.yml`.
+
+В `/source` каждая вкладка свежего общего прайса доступна как отдельный источник.
+Выбор «Общий прайс» ищет по всем вкладкам, выбор вкладки — только по ней.

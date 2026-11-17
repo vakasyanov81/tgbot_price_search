@@ -63,7 +63,7 @@ def test_result_keeps_original_case(tmp_path: Path) -> None:
     path = write_price(tmp_path / 'drom.xlsx', [DROM_HEADER, drom_row(title)])
     found = PriceListSearch(PriceListDataLoader(path)).search('KAMA 185/65r15')
     assert list(found) == [title.lower()]
-    assert prepare_search_result(found) == f'1. {title} - р/5000р 4 шт.'
+    assert prepare_search_result(found) == f'1. {title} - 5000р 4 шт.'
 
 
 def test_reads_drom_batteries_sheet(tmp_path: Path) -> None:
