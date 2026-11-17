@@ -7,10 +7,13 @@ from autosnab_bot.services.price_sources import DEFAULT_SOURCE, SOURCES_BY_KEY, 
 RESULT_FILES = (
     'price_2026-10-19.xlsx',
     'price_2026-10-20.xlsx',
-    'price_drom_2026-10-19.xlsx',
-    'price_drom_2026-10-20.xlsx',
+    'price_drom_akb_2026-10-19.xlsx',
+    'price_drom_akb_2026-10-20.xlsx',
+    'price_drom_tire_2026-10-19.xlsx',
+    'price_drom_tire_2026-10-20.xlsx',
+    'price_drom_2026-10-21.xlsx',
     'doubles_2026-10-20.xlsx',
-    'price_drom_2026-10-21.xlsx.part',
+    'price_drom_akb_2026-10-21.xlsx.part',
 )
 
 
@@ -18,13 +21,18 @@ RESULT_FILES = (
 def result_dir(tmp_path: Path) -> Path:
     for name in RESULT_FILES:
         (tmp_path / name).write_bytes(b'')
-    (tmp_path / 'price_drom_2026-10-22.xlsx').mkdir()
+    (tmp_path / 'price_drom_akb_2026-10-22.xlsx').mkdir()
     return tmp_path
 
 
 @pytest.mark.parametrize(
     ('key', 'expected'),
-    [('drom', 'price_drom_2026-10-20.xlsx'), ('inner', 'price_2026-10-20.xlsx'), ('full', None)],
+    [
+        ('drom', 'price_drom_akb_2026-10-20.xlsx'),
+        ('drom_tire', 'price_drom_tire_2026-10-20.xlsx'),
+        ('inner', 'price_2026-10-20.xlsx'),
+        ('full', None),
+    ],
 )
 def test_latest_file_per_source(result_dir: Path, key: str, expected: str | None) -> None:
     latest = SOURCES_BY_KEY[key].latest_file(result_dir)

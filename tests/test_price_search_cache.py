@@ -15,7 +15,7 @@ def row(title: str) -> list[object]:
 
 def test_cache_reloads_changed_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(price_search_cache, '_cache', {})
-    path = write_price(tmp_path / 'price_drom_2026-10-20.xlsx', [DROM_HEADER, row('Kama')])
+    path = write_price(tmp_path / 'price_drom_akb_2026-11-17.xlsx', [DROM_HEADER, row('Kama')])
     first = price_search_cache.get_search_instance('drom', path)
     assert price_search_cache.get_search_instance('drom', path) is first
 

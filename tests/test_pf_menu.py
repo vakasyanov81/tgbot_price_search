@@ -35,7 +35,7 @@ def test_menu_without_submodule(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_make_price_sends_log_and_files(monkeypatch: pytest.MonkeyPatch) -> None:
     async def make_price() -> tuple[CommandResult, list[Path]]:
-        return OK, [Path('price_drom_2026-10-20.xlsx')]
+        return OK, [Path('price_drom_akb_2026-11-17.xlsx')]
 
     monkeypatch.setattr(priceformation, 'make_price', make_price)
     monkeypatch.setattr(pf_menu, 'send_document', _fake_send_document)

@@ -7,7 +7,7 @@ from autosnab_bot.services.response import send_response
 from autosnab_bot.services.validate_user import check_admin, validate_user
 
 INTRO = (
-    'Напишите название позиции, бот найдёт её в прайсе (по умолчанию в прайсе для Дрома).\n'
+    'Напишите название позиции, бот найдёт её в прайсе (по умолчанию в прайсе для Дрома (АКБ)).\n'
     'Меню внизу — фильтр по типу товара: «Все» или конкретный тип.'
 )
 COMMANDS = [

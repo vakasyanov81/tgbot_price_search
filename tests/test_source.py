@@ -13,7 +13,7 @@ SEARCH_SOURCE = 'search_source'
 @pytest.fixture(autouse=True)
 def _only_drom_ready(monkeypatch: pytest.MonkeyPatch) -> None:
     def latest_file(source: PriceSource) -> Path | None:
-        return Path('price_drom_2026-10-20.xlsx') if source.key == 'drom' else None
+        return Path('price_drom_akb_2026-11-17.xlsx') if source.key == 'drom' else None
 
     monkeypatch.setattr(PriceSource, 'latest_file', latest_file)
 
@@ -22,7 +22,8 @@ def test_choose_source_lists_prices() -> None:
     context = make_context()
     asyncio.run(handlers.choose_source(make_update('/source'), context))
     assert keyboard_labels(context.bot.sent[0]) == [
-        '✅ Прайс для Дрома: price_drom_2026-10-20.xlsx',
+        '✅ Прайс для Дрома (АКБ): price_drom_akb_2026-11-17.xlsx',
+        'Прайс для Дрома (шины) (не сформирован)',
         'Общий прайс (не сформирован)',
         'Полный прайс (не сформирован)',
     ]

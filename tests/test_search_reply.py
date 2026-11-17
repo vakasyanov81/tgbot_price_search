@@ -11,7 +11,7 @@ from autosnab_bot.services.price_search import PriceListSearch
 from autosnab_bot.services.price_sources import DEFAULT_SOURCE, SOURCES_BY_KEY, PriceSource
 from tests.price_helpers import StubLoader, numbered_prices, price_info
 
-DROM_FILE = Path('price_drom_2026-10-20.xlsx')
+DROM_FILE = Path('price_drom_akb_2026-11-17.xlsx')
 DISK = 'Диск'
 MANY = 120
 LONG_TITLE_LENGTH = 150
@@ -36,7 +36,7 @@ def reply_for(
 def test_reply_shows_source_type_total_and_cheapest(monkeypatch: pytest.MonkeyPatch) -> None:
     titles_prices = many_prices()
     lines = reply_for(monkeypatch, titles_prices, 'kama', DISK).split('\n')
-    assert lines[0] == f'Источник: Прайс для Дрома ({DROM_FILE.name})'
+    assert lines[0] == f'Источник: Прайс для Дрома (АКБ) ({DROM_FILE.name})'
     assert lines[1] == f'Тип товара: {DISK}'
     assert lines[2] == 'Найдено 0 позиций'
 

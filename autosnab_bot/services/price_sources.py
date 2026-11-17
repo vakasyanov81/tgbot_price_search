@@ -11,7 +11,7 @@ from autosnab_bot.services.priceformation_cli import RESULT_DIR
 class PriceSource:
     key: str
     title: str
-    # Имя файла шаблона priceformation с датой формирования: price_drom_2026-10-20.xlsx.
+    # Имя файла шаблона priceformation с датой формирования: price_drom_akb_2026-11-17.xlsx.
     file_pattern: re.Pattern[str]
     # Как получить прайс, если его ещё нет (HTML).
     how_to_make: str
@@ -32,7 +32,8 @@ _DATE = r'\d{4}-\d{2}-\d{2}'
 _VIA_PF = 'Сформируйте его через /pf → «Сформировать общий прайс»'
 
 SOURCES = (
-    PriceSource('drom', 'Прайс для Дрома', re.compile(rf'price_drom_{_DATE}\.xlsx'), _VIA_PF),
+    PriceSource('drom', 'Прайс для Дрома (АКБ)', re.compile(rf'price_drom_akb_{_DATE}\.xlsx'), _VIA_PF),
+    PriceSource('drom_tire', 'Прайс для Дрома (шины)', re.compile(rf'price_drom_tire_{_DATE}\.xlsx'), _VIA_PF),
     PriceSource('inner', 'Общий прайс', re.compile(rf'price_{_DATE}\.xlsx'), _VIA_PF),
     PriceSource(
         'full',
