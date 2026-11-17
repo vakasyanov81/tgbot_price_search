@@ -13,7 +13,7 @@ def test_escapes_html() -> None:
 def test_numbers_rows_and_shows_supplier() -> None:
     kama = price_info('5000.0', supplier='Пошк')
     found = {'kama': [kama], 'nokian': [price_info('7000')]}
-    assert prepare_search_result(found) == '1. kama - р/5000р 1 шт. (Пошк)\n2. nokian - р/7000р 1 шт.'
+    assert prepare_search_result(found) == '1. kama - 5000р 1 шт. (Пошк)\n2. nokian - 7000р 1 шт.'
 
 
 def test_shows_purchase_before_selling_price_without_decimal_suffix() -> None:
@@ -31,3 +31,8 @@ def test_shows_purchase_before_selling_price_without_decimal_suffix() -> None:
 )
 def test_try_to_int(raw_number: str, expected: str) -> None:
     assert try_to_int(raw_number) == expected
+
+
+def test_omits_purchase_separator_when_only_selling_price_exists() -> None:
+    found = {'АКБ 55': [PriceInfo('6500.0', '', '16.0', 1)]}
+    assert prepare_search_result(found) == '1. АКБ 55 - 6500р 16 шт.'

@@ -4,7 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.search import USER_SOURCE, user_source
-from autosnab_bot.services.price_sources import SOURCES, SOURCES_BY_KEY, PriceSource
+from autosnab_bot.services.price_sources import PriceSource, get_sources
 from autosnab_bot.services.response import send_response
 from autosnab_bot.services.validate_user import validate_user
 
@@ -14,7 +14,7 @@ CALLBACK_PREFIX = 'src:'
 @validate_user
 async def choose_source(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     current = user_source(context)
-    keyboard = InlineKeyboardMarkup([[_source_button(source, current)] for source in SOURCES])
+    keyboard = InlineKeyboardMarkup([[_source_button(source, current)] for source in get_sources()])
     await send_response(
         update,
         context,
@@ -29,7 +29,8 @@ async def set_source(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if query is None or query.data is None:
         return
     await query.answer()
-    source = SOURCES_BY_KEY.get(query.data.removeprefix(CALLBACK_PREFIX))
+    key = query.data.removeprefix(CALLBACK_PREFIX)
+    source = next((entry for entry in get_sources() if entry.key == key), None)
     if source is None or context.user_data is None:
         return
     context.user_data[USER_SOURCE] = source.key
