@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from openpyxl import load_workbook
+
 from autosnab_bot.services.price_list import PriceInfo, PriceListDataLoader
 from autosnab_bot.services.price_search import PriceListSearch
 from autosnab_bot.services.search_format import prepare_search_result
@@ -62,3 +64,29 @@ def test_result_keeps_original_case(tmp_path: Path) -> None:
     found = PriceListSearch(PriceListDataLoader(path)).search('KAMA 185/65r15')
     assert list(found) == [title.lower()]
     assert prepare_search_result(found) == f'1. {title} - р/5000р 4 шт.'
+
+
+def test_reads_drom_batteries_sheet(tmp_path: Path) -> None:
+    path = write_price(tmp_path / 'akb.xlsx', [DROM_HEADER, drom_row(KAMA_TITLE)], sheet='Аккумуляторы')
+    loader = PriceListDataLoader(path)
+    assert loader.load_price() is True
+    assert loader.get_price_list()[KAMA_KEY][0].price == '5000.0'
+
+
+def test_reads_all_product_sheets_with_battery_headers(tmp_path: Path) -> None:
+    path = write_price(
+        tmp_path / 'inner.xlsx', [INNER_HEADER, (TIRE, KAMA_TITLE, 4000, 5000, 4, POSHK)], sheet='Шины и диски'
+    )
+    workbook = load_workbook(path)
+    worksheet = workbook.create_sheet('Аккумуляторы')
+    worksheet.append(['Название', 'Цена продажи', 'Закупочная цена', 'Остаток', 'Поставщик'])
+    worksheet.append(['АКБ 255', 6000, 4500, 2, POSHK])
+    workbook.create_sheet('Примечания').append(['Комментарий'])
+    workbook.create_sheet('Пустой')
+    workbook.save(path)
+    loader = PriceListDataLoader(path)
+    assert loader.load_price() is True
+    prices = loader.get_price_list()
+    assert prices[KAMA_KEY][0].price == '5000.0'
+    expected = PriceInfo('6000.0', '4500.0', '2.0', 1, POSHK, 'Аккумулятор', 'АКБ 255')
+    assert prices['акб 255'][0] == expected

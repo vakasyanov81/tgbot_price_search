@@ -28,7 +28,7 @@ async def search_reply(source: PriceSource, product_type: str | None, text: str)
         return f'{not_ready}\nВыбрать другой прайс: /source'
     price_search = await asyncio.to_thread(get_search_instance, source.key, path)
     if not price_search.is_loaded:
-        return f'Не удалось прочитать {html.escape(path.name)}: нет листа price или колонки «Номенклатура»'
+        return f'Не удалось прочитать {html.escape(path.name)}: нет листов с колонкой «Номенклатура» или «Название»'
     # Все совпадения нужны для общего числа найденных; показываются самые дешёвые.
     found = price_search.search(text, search_limit=None, product_type=product_type)
     return _fit_reply(_header(source, path, product_type), found)
