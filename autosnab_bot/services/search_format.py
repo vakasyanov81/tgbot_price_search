@@ -25,7 +25,13 @@ def try_to_int(raw_number: str) -> str:
 def _result_line(row: int, title: str, prices: list[PriceInfo]) -> str:
     cheapest = prices[0]
     name = html.escape(cheapest.title or title)
-    price = html.escape(try_to_int(cheapest.price))
+    price = _price_pair(cheapest)
     rest = html.escape(try_to_int(cheapest.rest))
     supplier = f' ({html.escape(cheapest.supplier)})' if cheapest.supplier else ''
-    return f'{row}. {name} - {price}Руб. {rest} шт.{supplier}'
+    return f'{row}. {name} - {price} {rest} шт.{supplier}'
+
+
+def _price_pair(position: PriceInfo) -> str:
+    purchase = html.escape(try_to_int(position.price_purchase))
+    selling = html.escape(try_to_int(position.price))
+    return f'{purchase}р/{selling}р'
