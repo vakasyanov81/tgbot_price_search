@@ -6,7 +6,7 @@ import pytest
 from telegram.error import BadRequest
 
 from autosnab_bot.services.search_replies import SEARCH_REPLIES
-from autosnab_bot.services.type_menu import USER_TYPE_FILTER
+from autosnab_bot.services.type_menu import USER_SOURCE, USER_TYPE_FILTER
 from tests.fakes import FakeBot, keyboard_labels, make_context, make_update
 
 # handlers/__init__ экспортирует функцию search, она перекрывает одноимённый модуль.
@@ -64,7 +64,7 @@ def test_undeletable_reply_still_gets_new_one() -> None:
 
 
 def test_search_uses_type_filter(_fake_reply: list[str | None]) -> None:
-    context = make_context({USER_TYPE_FILTER: 'Диск'})
+    context = make_context({USER_SOURCE: 'drom_tire', USER_TYPE_FILTER: 'Диск'})
     run(make_update('r15'), context)
     assert _fake_reply == ['Диск']
     assert '✅ Диск' in keyboard_labels(context.bot.sent[-1])
@@ -81,3 +81,10 @@ def test_message_without_text_is_ignored() -> None:
     context = make_context()
     run(make_update(), context)
     assert context.bot.sent == []
+
+
+def test_saved_filter_from_another_group_does_not_affect_search(_fake_reply: list[str | None]) -> None:
+    context = make_context({USER_TYPE_FILTER: 'Диск'})
+    run(make_update('акб'), context)
+    assert _fake_reply == [None]
+    assert keyboard_labels(context.bot.sent[-1]) == ['✅ Все', 'Аккумулятор']

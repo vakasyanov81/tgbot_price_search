@@ -3,9 +3,9 @@ import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from autosnab_bot.handlers.search import USER_SOURCE, user_source
 from autosnab_bot.services.price_sources import PriceSource, get_sources
 from autosnab_bot.services.response import send_response
+from autosnab_bot.services.type_menu import USER_SOURCE, USER_TYPE_FILTER, user_source, user_type_filter
 from autosnab_bot.services.validate_user import validate_user
 
 CALLBACK_PREFIX = 'src:'
@@ -34,6 +34,8 @@ async def set_source(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if source is None or context.user_data is None:
         return
     context.user_data[USER_SOURCE] = source.key
+    if await user_type_filter(context, source) is None:
+        context.user_data.pop(USER_TYPE_FILTER, None)
     note = '' if source.latest_file() else f'\nЭтот прайс ещё не сформирован. {source.how_to_make}.'
     chosen = f'Поиск будет идти по: <b>{html.escape(source.title)}</b>'
     await send_response(update, context, response=f'{chosen}{note}')

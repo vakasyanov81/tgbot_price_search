@@ -3,15 +3,14 @@ import html
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from autosnab_bot.services.product_types import get_product_types
 from autosnab_bot.services.response import send_response
-from autosnab_bot.services.type_menu import ACTIVE_MARK, ALL_TYPES, USER_TYPE_FILTER
+from autosnab_bot.services.type_menu import ACTIVE_MARK, ALL_TYPES, USER_TYPE_FILTER, source_types, user_source
 
 
 async def handle_type_chip(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> bool:
     """Нажатие на чипс типа товара: переключить фильтр. False — это не чипс, а поисковый запрос."""
     label = text.strip().removeprefix(ACTIVE_MARK.strip()).strip()
-    if label != ALL_TYPES and label not in await get_product_types():
+    if label != ALL_TYPES and label not in await source_types(user_source(context)):
         return False
     if context.user_data is not None:
         if label == ALL_TYPES:

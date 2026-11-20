@@ -7,6 +7,7 @@ from pathlib import Path
 
 from python_calamine import CalamineWorkbook
 
+from autosnab_bot.services import priceformation_reference as reference
 from autosnab_bot.services.priceformation_cli import RESULT_DIR
 
 
@@ -19,6 +20,7 @@ class PriceSource:
     # Как получить прайс, если его ещё нет (HTML).
     how_to_make: str
     sheet_name: str | None = None
+    product_groups: tuple[str, ...] = (reference.TIRE,)
 
     def latest_file(self, folder: Path | None = None) -> Path | None:
         """Самый свежий файл этого прайса (по дате в имени)."""
@@ -37,9 +39,21 @@ _DATE = r'\d{4}-\d{2}-\d{2}'
 _VIA_PF = 'Сформируйте его через /pf → «Сформировать общий прайс»'
 
 SOURCES = (
-    PriceSource('drom', 'Прайс для Дрома (АКБ)', re.compile(rf'price_drom_akb_{_DATE}\.xlsx'), _VIA_PF),
+    PriceSource(
+        'drom',
+        'Прайс для Дрома (АКБ)',
+        re.compile(rf'price_drom_akb_{_DATE}\.xlsx'),
+        _VIA_PF,
+        product_groups=(reference.AKB,),
+    ),
     PriceSource('drom_tire', 'Прайс для Дрома (шины)', re.compile(rf'price_drom_tire_{_DATE}\.xlsx'), _VIA_PF),
-    PriceSource('inner', 'Общий прайс', re.compile(rf'price_{_DATE}\.xlsx'), _VIA_PF),
+    PriceSource(
+        'inner',
+        'Общий прайс',
+        re.compile(rf'price_{_DATE}\.xlsx'),
+        _VIA_PF,
+        product_groups=reference.PRODUCT_GROUPS,
+    ),
     PriceSource(
         'full',
         'Полный прайс',
@@ -47,6 +61,7 @@ SOURCES = (
         'Бот его не формирует: запустите в priceformation <code>uv run pf parse --result-template for_full</code>',
     ),
 )
+_SHEET_GROUPS = {'Аккумуляторы': (reference.AKB,), 'Шины и диски': (reference.TIRE,)}
 SOURCES_BY_KEY = {source.key: source for source in SOURCES}
 DEFAULT_SOURCE = SOURCES_BY_KEY['drom']
 
@@ -74,4 +89,7 @@ def get_sources() -> tuple[PriceSource, ...]:
 def _sheet_source(common: PriceSource, name: str) -> PriceSource:
     # Хеш удерживает callback_data в пределах 64 байт Telegram даже при длинном имени листа.
     suffix = hashlib.sha256(name.encode()).hexdigest()[:SHEET_KEY_LENGTH]
-    return dataclasses.replace(common, key=f'inner:{suffix}', title=f'Общий прайс — {name}', sheet_name=name)
+    groups = _SHEET_GROUPS.get(name, common.product_groups)
+    return dataclasses.replace(
+        common, key=f'inner:{suffix}', title=f'Общий прайс — {name}', sheet_name=name, product_groups=groups
+    )

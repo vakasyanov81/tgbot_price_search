@@ -22,18 +22,19 @@ class _TypesCache:
         return bool(self.types) and time.monotonic() - self.loaded_at < CACHE_TTL
 
 
-_cache = _TypesCache()
+_cache: dict[str, _TypesCache] = {}
 
 
-async def get_product_types() -> list[str]:
+async def get_product_types(group: str) -> list[str]:
     """Типы товара; при ошибке CLI — прежний список (или пустой, если его ещё не было)."""
-    if _cache.is_fresh():
-        return _cache.types
+    cache = _cache.setdefault(group, _TypesCache())
+    if cache.is_fresh():
+        return cache.types
     try:
-        fetched = await priceformation_reference.get_product_types()
+        fetched = await priceformation_reference.get_product_types(group)
     except RuntimeError, ValueError, OSError:
-        logger.exception('Не удалось получить типы товара из priceformation')
-        return _cache.types
-    _cache.types = fetched
-    _cache.loaded_at = time.monotonic()
+        logger.exception('Не удалось получить типы товара из priceformation для группы %s', group)
+        return cache.types
+    cache.types = fetched
+    cache.loaded_at = time.monotonic()
     return fetched

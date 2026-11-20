@@ -5,6 +5,7 @@ import pytest
 
 from autosnab_bot import handlers
 from autosnab_bot.services.price_sources import PriceSource
+from autosnab_bot.services.type_menu import USER_TYPE_FILTER
 from tests.fakes import keyboard_labels, make_context, make_update
 
 SEARCH_SOURCE = 'search_source'
@@ -42,3 +43,10 @@ def test_set_source_ignores_unknown() -> None:
     asyncio.run(handlers.set_source(make_update(), context))
     assert not context.user_data
     assert not context.bot.sent
+
+
+def test_switch_to_battery_price_replaces_tire_buttons_and_clears_filter() -> None:
+    context = make_context({SEARCH_SOURCE: 'drom_tire', USER_TYPE_FILTER: 'Легковая шина'})
+    asyncio.run(handlers.set_source(make_update(callback_data='src:drom'), context))
+    assert context.user_data == {SEARCH_SOURCE: 'drom'}
+    assert keyboard_labels(context.bot.sent[-1]) == ['✅ Все', 'Аккумулятор']

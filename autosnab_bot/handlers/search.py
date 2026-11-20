@@ -5,21 +5,13 @@ from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from autosnab_bot.handlers.type_filter import handle_type_chip
-from autosnab_bot.services.price_sources import PriceSource, get_source
 from autosnab_bot.services.response import send_response
 from autosnab_bot.services.search_replies import SearchReplies, digest
 from autosnab_bot.services.search_reply import search_reply
-from autosnab_bot.services.type_menu import user_type_filter
+from autosnab_bot.services.type_menu import user_source, user_type_filter
 from autosnab_bot.services.validate_user import validate_user
 
 logger = logging.getLogger(__name__)
-
-# Ключ выбранного прайса в user_data (см. /source).
-USER_SOURCE = 'search_source'
-
-
-def user_source(context: ContextTypes.DEFAULT_TYPE) -> PriceSource:
-    return get_source((context.user_data or {}).get(USER_SOURCE))
 
 
 @validate_user
@@ -46,7 +38,8 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def search_response(context: ContextTypes.DEFAULT_TYPE, text: str) -> str:
     """Ответ на запрос по прайсу и фильтру типа товара, выбранным пользователем."""
-    return await search_reply(user_source(context), user_type_filter(context), text)
+    source = user_source(context)
+    return await search_reply(source, await user_type_filter(context, source), text)
 
 
 async def _delete_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, message_id: int) -> None:
