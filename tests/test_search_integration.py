@@ -128,5 +128,4 @@ def test_source_menu_lists_workbook_sheets_under_common_price(_result_prices: No
         'Общий прайс — Шины и диски',
         'Общий прайс — Аккумуляторы',
         'Общий прайс — Спецпредложения',
-        'Полный прайс (не сформирован)',
     ]

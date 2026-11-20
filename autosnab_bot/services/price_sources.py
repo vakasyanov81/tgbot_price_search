@@ -54,12 +54,6 @@ SOURCES = (
         _VIA_PF,
         product_groups=reference.PRODUCT_GROUPS,
     ),
-    PriceSource(
-        'full',
-        'Полный прайс',
-        re.compile(rf'price_full_{_DATE}\.xlsx'),
-        'Бот его не формирует: запустите в priceformation <code>uv run pf parse --result-template for_full</code>',
-    ),
 )
 _SHEET_GROUPS = {'Аккумуляторы': (reference.AKB,), 'Шины и диски': (reference.TIRE,)}
 SOURCES_BY_KEY = {source.key: source for source in SOURCES}
@@ -67,6 +61,9 @@ DEFAULT_SOURCE = SOURCES_BY_KEY['drom']
 
 
 def get_source(key: str | None) -> PriceSource:
+    # Сохранённый выбор полного прайса переводим на общий прайс.
+    if key == 'full':
+        return SOURCES_BY_KEY['inner']
     source = SOURCES_BY_KEY.get(key or '')
     if source is not None:
         return source
@@ -83,8 +80,7 @@ def get_sources() -> tuple[PriceSource, ...]:
         return SOURCES
     workbook = CalamineWorkbook.from_path(str(path))
     sheets = tuple(_sheet_source(common, name) for name in workbook.sheet_names)
-    after_common = SOURCES.index(common) + 1
-    return (*SOURCES[:after_common], *sheets, *SOURCES[after_common:])
+    return (*SOURCES, *sheets)
 
 
 def _sheet_source(common: PriceSource, name: str) -> PriceSource:
