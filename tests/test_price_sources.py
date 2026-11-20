@@ -31,7 +31,6 @@ def result_dir(tmp_path: Path) -> Path:
         ('drom', 'price_drom_akb_2026-10-20.xlsx'),
         ('drom_tire', 'price_drom_tire_2026-10-20.xlsx'),
         ('inner', 'price_2026-10-20.xlsx'),
-        ('full', None),
     ],
 )
 def test_latest_file_per_source(result_dir: Path, key: str, expected: str | None) -> None:
@@ -48,3 +47,7 @@ def test_get_source_defaults_to_drom() -> None:
     assert get_source(None) is DEFAULT_SOURCE
     assert get_source('unknown') is DEFAULT_SOURCE
     assert get_source('inner').key == 'inner'
+
+
+def test_saved_full_price_uses_common_price() -> None:
+    assert get_source('full') is SOURCES_BY_KEY['inner']

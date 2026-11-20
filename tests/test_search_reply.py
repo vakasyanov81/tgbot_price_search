@@ -68,8 +68,8 @@ def test_reply_without_matches(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_reply_when_price_not_ready(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(PriceSource, 'latest_file', lambda _source: None)
-    reply = asyncio.run(search_reply.search_reply(SOURCES_BY_KEY['full'], None, 'kama'))
-    assert reply.startswith('Полный прайс ещё не сформирован.')
+    reply = asyncio.run(search_reply.search_reply(SOURCES_BY_KEY['inner'], None, 'kama'))
+    assert reply.startswith('Общий прайс ещё не сформирован.')
     assert '/source' in reply
 
 

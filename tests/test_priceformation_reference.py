@@ -6,8 +6,9 @@ from autosnab_bot.services import priceformation_reference
 from autosnab_bot.services.priceformation_cli import CommandResult
 
 
-def stub_run(monkeypatch: pytest.MonkeyPatch, outcome: CommandResult) -> None:
-    async def run_command(*_args: str) -> CommandResult:
+def stub_run(monkeypatch: pytest.MonkeyPatch, outcome: CommandResult, *expected: str) -> None:
+    async def run_command(*args: str) -> CommandResult:
+        assert not expected or args == expected
         return outcome
 
     monkeypatch.setattr(priceformation_reference, 'run_command', run_command)
@@ -25,11 +26,11 @@ def test_get_suppliers_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_get_product_types(monkeypatch: pytest.MonkeyPatch) -> None:
-    stub_run(monkeypatch, CommandResult(0, '{"ok": true, "types": ["Диск"]}'))
-    assert asyncio.run(priceformation_reference.get_product_types()) == ['Диск']
+    stub_run(monkeypatch, CommandResult(0, '{"ok": true, "types": ["Диск"]}'), 'get_product_types', 'tire')
+    assert asyncio.run(priceformation_reference.get_product_types('tire')) == ['Диск']
 
 
 def test_get_product_types_error(monkeypatch: pytest.MonkeyPatch) -> None:
     stub_run(monkeypatch, CommandResult(1, ''))
     with pytest.raises(RuntimeError, match='типы товара'):
-        asyncio.run(priceformation_reference.get_product_types())
+        asyncio.run(priceformation_reference.get_product_types('tire'))

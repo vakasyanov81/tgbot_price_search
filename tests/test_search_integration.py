@@ -93,3 +93,39 @@ def test_selected_source_searches_real_workbook(
         f'Найдено {len(expected_positions)} позиций',
         *expected_positions,
     ]
+
+
+@pytest.mark.parametrize(
+    ('sheet_name', 'expected_types'),
+    [
+        ('Шины и диски', ['Легковая шина', 'Грузовая шина', 'Диск']),
+        ('Аккумуляторы', ['Аккумулятор']),
+        (None, ['Легковая шина', 'Грузовая шина', 'Диск', 'Аккумулятор']),
+    ],
+)
+def test_common_price_keyboard_matches_selected_sheet(
+    _result_prices: None, sheet_name: str | None, expected_types: list[str]
+) -> None:
+    source = next(
+        source
+        for source in price_sources.get_sources()
+        if source.sheet_name == sheet_name and source.key.startswith('inner')
+    )
+    context = make_context()
+    asyncio.run(handlers.set_source(make_update(callback_data=f'src:{source.key}'), context))
+    assert keyboard_labels(context.bot.sent[-1]) == ['✅ Все', *expected_types]
+
+
+def test_source_menu_lists_workbook_sheets_under_common_price(_result_prices: None) -> None:
+    context = make_context()
+    asyncio.run(handlers.choose_source(make_update('/source'), context))
+    labels = keyboard_labels(context.bot.sent[0])
+    titles = [label.split(':', 1)[0] for label in labels]
+    assert titles == [
+        '✅ Прайс для Дрома (АКБ)',
+        'Прайс для Дрома (шины) (не сформирован)',
+        'Общий прайс',
+        'Общий прайс — Шины и диски',
+        'Общий прайс — Аккумуляторы',
+        'Общий прайс — Спецпредложения',
+    ]

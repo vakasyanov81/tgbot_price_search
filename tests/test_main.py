@@ -66,10 +66,10 @@ def test_check_config_requires_token_and_users(
 def test_warm_up_loads_product_types(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
 
-    async def get_product_types() -> list[str]:
-        calls.append('types')
+    async def get_product_types(group: str) -> list[str]:
+        calls.append(group)
         return []
 
     monkeypatch.setattr(bot_main, 'get_product_types', get_product_types)
     asyncio.run(bot_main._warm_up(object()))
-    assert calls == ['types']
+    assert calls == ['tire', 'akb']

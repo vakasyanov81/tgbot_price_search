@@ -3,6 +3,9 @@
 from autosnab_bot.services.priceformation_cli import ERROR_TAIL, run_command, tail
 
 GET_SUPPLIERS = 'get_supliers'
+TIRE = 'tire'
+AKB = 'akb'
+PRODUCT_GROUPS = (TIRE, AKB)
 GET_PRODUCT_TYPES = 'get_product_types'
 
 
@@ -15,9 +18,9 @@ async def get_suppliers() -> dict[str, str]:
     return {supplier_id: entry['sup_title'] for supplier_id, entry in catalog.items()}
 
 
-async def get_product_types() -> list[str]:
+async def get_product_types(group: str) -> list[str]:
     """Типы товара, которые priceformation ставит в колонку «Тип товара» прайсов."""
-    command_result = await run_command(GET_PRODUCT_TYPES)
+    command_result = await run_command(GET_PRODUCT_TYPES, group)
     payload = command_result.json() if command_result.ok else None
     types = payload.get('types') if isinstance(payload, dict) else None
     if not isinstance(types, list):

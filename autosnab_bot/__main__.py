@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any
 
@@ -12,6 +13,7 @@ from telegram.ext import (
 )
 
 from autosnab_bot import config, handlers
+from autosnab_bot.services.priceformation_reference import PRODUCT_GROUPS
 from autosnab_bot.services.product_types import get_product_types
 from autosnab_bot.services.validate_user import ALLOWED_USER_IDS
 
@@ -26,7 +28,7 @@ COMMAND_HANDLERS = {
 
 async def _warm_up(_application: object) -> None:
     # Типы товара для меню внизу: CLI отвечает несколько секунд, первый поиск не должен его ждать.
-    await get_product_types()
+    await asyncio.gather(*(get_product_types(group) for group in PRODUCT_GROUPS))
 
 
 def check_config() -> None:
