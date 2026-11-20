@@ -114,3 +114,19 @@ def test_common_price_keyboard_matches_selected_sheet(
     context = make_context()
     asyncio.run(handlers.set_source(make_update(callback_data=f'src:{source.key}'), context))
     assert keyboard_labels(context.bot.sent[-1]) == ['✅ Все', *expected_types]
+
+
+def test_source_menu_lists_workbook_sheets_under_common_price(_result_prices: None) -> None:
+    context = make_context()
+    asyncio.run(handlers.choose_source(make_update('/source'), context))
+    labels = keyboard_labels(context.bot.sent[0])
+    titles = [label.split(':', 1)[0] for label in labels]
+    assert titles == [
+        '✅ Прайс для Дрома (АКБ)',
+        'Прайс для Дрома (шины) (не сформирован)',
+        'Общий прайс',
+        'Общий прайс — Шины и диски',
+        'Общий прайс — Аккумуляторы',
+        'Общий прайс — Спецпредложения',
+        'Полный прайс (не сформирован)',
+    ]

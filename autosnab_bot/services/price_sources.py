@@ -83,7 +83,8 @@ def get_sources() -> tuple[PriceSource, ...]:
         return SOURCES
     workbook = CalamineWorkbook.from_path(str(path))
     sheets = tuple(_sheet_source(common, name) for name in workbook.sheet_names)
-    return (*SOURCES, *sheets)
+    after_common = SOURCES.index(common) + 1
+    return (*SOURCES[:after_common], *sheets, *SOURCES[after_common:])
 
 
 def _sheet_source(common: PriceSource, name: str) -> PriceSource:
